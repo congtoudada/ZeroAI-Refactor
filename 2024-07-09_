@@ -1,0 +1,153 @@
+2024-07-09 23:31:39.634 | INFO     | zero.core.component.component:on_start:33 - [ 19168:main ] 配置文件参数: {
+    "single_mode": true,
+    "stream_list": [],
+    "algorithm_list": [],
+    "service": [],
+    "app_running_file": "",
+    "log_enable": true,
+    "log_level": 1,
+    "log_clean": true,
+    "log_output_path": ""
+}
+2024-07-09 23:31:39.636 | INFO     | zero.core.component.launch_comp:on_start:21 - [ [ 19168:main ] ] True
+2024-07-09 23:32:36.724 | INFO     | zero.core.component.component:on_start:33 - [ 18624:main ] 配置文件参数: {
+    "single_mode": true,
+    "stream_list": [],
+    "algorithm_list": [],
+    "service": [],
+    "app_running_file": "",
+    "log_enable": true,
+    "log_level": 1,
+    "log_clean": true,
+    "log_output_path": ""
+}
+2024-07-09 23:32:37.184 | INFO     | zero.core.component.launch_comp:on_start:27 - [ [ 18624:main ] ] True
+2024-07-09 23:33:07.235 | INFO     | zero.core.component.component:on_start:33 - [ 22968:main ] 配置文件参数: 
+{
+    "single_mode": true,
+    "stream_list": [],
+    "algorithm_list": [],
+    "service": [],
+    "app_running_file": "",
+    "log_enable": true,
+    "log_level": 1,
+    "log_clean": true,
+    "log_output_path": ""
+}
+2024-07-09 23:33:07.687 | INFO     | zero.core.component.launch_comp:on_start:27 - [ [ 22968:main ] ] True
+2024-07-09 23:33:33.679 | INFO     | zero.core.component.component:on_start:33 - [ 12640:main ] 配置文件参数: 
+{
+    "single_mode": true,
+    "stream_list": [],
+    "algorithm_list": [],
+    "service": [],
+    "app_running_file": "",
+    "log_enable": true,
+    "log_level": 1,
+    "log_clean": true,
+    "log_output_path": ""
+}
+2024-07-09 23:33:34.113 | INFO     | zero.core.component.launch_comp:on_start:27 - [ 12640:main ] True
+2024-07-09 23:37:15.470 | INFO     | zero.core.component.component:on_start:33 - [ 10544:main ] 配置文件参数: 
+{
+    "single_mode": true,
+    "stream_list": [],
+    "algorithm_list": [],
+    "service": [],
+    "app_running_file": "",
+    "log_enable": true,
+    "log_level": 1,
+    "log_clean": true,
+    "log_output_path": ""
+}
+2024-07-09 23:39:18.231 | INFO     | zero.core.component.component:on_destroy:39 - [ 10544:main ] destroy!
+2024-07-09 23:43:37.967 | INFO     | zero.core.component.component:on_start:33 - [ 26788:main ] 配置文件参数: 
+{
+    "single_mode": true,
+    "stream_list": [],
+    "algorithm_list": [],
+    "service": [],
+    "app_running_file": "",
+    "log_enable": true,
+    "log_level": 1,
+    "log_clean": true,
+    "log_output_path": ""
+}
+2024-07-09 23:43:46.842 | INFO     | zero.core.component.component:on_destroy:39 - [ 26788:main ] destroy!
+2024-07-09 23:43:48.492 | INFO     | zero.core.component.component:on_start:33 - [ 27008:main ] 配置文件参数: 
+{
+    "single_mode": true,
+    "stream_list": [],
+    "algorithm_list": [],
+    "service": [],
+    "app_running_file": "",
+    "log_enable": true,
+    "log_level": 1,
+    "log_clean": true,
+    "log_output_path": ""
+}
+2024-07-09 23:43:56.040 | INFO     | zero.core.component.component:on_destroy:39 - [ 27008:main ] destroy!
+2024-07-09 23:44:56.783 | INFO     | zero.core.component.component:on_start:33 - [ 18744:main ] 配置文件参数: 
+{
+    "single_mode": true,
+    "stream_list": [],
+    "algorithm_list": [],
+    "service": [],
+    "app_running_file": "",
+    "log_enable": true,
+    "log_level": 1,
+    "log_clean": true,
+    "log_output_path": ""
+}
+2024-07-09 23:45:04.213 | INFO     | zero.core.component.component:on_destroy:39 - [ 18744:main ] destroy!
+2024-07-09 23:45:05.722 | INFO     | zero.core.component.component:on_start:33 - [ 8700:main ] 配置文件参数: 
+{
+    "single_mode": true,
+    "stream_list": [],
+    "algorithm_list": [],
+    "service": [],
+    "app_running_file": "",
+    "log_enable": true,
+    "log_level": 1,
+    "log_clean": true,
+    "log_output_path": ""
+}
+2024-07-09 23:46:12.633 | INFO     | zero.core.component.component:on_destroy:39 - [ 8700:main ] destroy!
+2024-07-09 23:46:14.161 | INFO     | zero.core.component.component:on_start:33 - [ 3800:main ] 配置文件参数: 
+{
+    "single_mode": true,
+    "stream_list": [],
+    "algorithm_list": [],
+    "service": [],
+    "app_running_file": "",
+    "log_enable": true,
+    "log_level": 1,
+    "log_clean": true,
+    "log_output_path": ""
+}
+2024-07-09 23:47:26.452 | INFO     | zero.core.component.component:on_start:33 - [ 2648:main ] 配置文件参数: 
+{
+    "single_mode": true,
+    "stream_list": [],
+    "algorithm_list": [],
+    "service": [],
+    "app_running_file": "",
+    "log_enable": true,
+    "log_level": 1,
+    "log_clean": true,
+    "log_output_path": ""
+}
+2024-07-09 23:47:35.625 | INFO     | zero.core.component.component:on_destroy:39 - [ 2648:main ] destroy!
+2024-07-09 23:47:37.105 | INFO     | zero.core.component.component:on_start:33 - [ 21772:main ] 配置文件参数: 
+{
+    "single_mode": true,
+    "stream_list": [],
+    "algorithm_list": [],
+    "service": [],
+    "app_running_file": "",
+    "log_enable": true,
+    "log_level": 1,
+    "log_clean": true,
+    "log_output_path": ""
+}
+2024-07-09 23:47:39.435 | INFO     | zero.core.component.component:on_destroy:39 - [ 21772:main ] destroy!
