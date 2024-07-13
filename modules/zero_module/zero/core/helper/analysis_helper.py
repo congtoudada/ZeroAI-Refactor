@@ -7,7 +7,7 @@ class AnalysisHelper:
     """
     性能分析器
     """
-    global_shared_memory = UltraDict(name="analysis")
+    global_shared_memory = UltraDict(name="analysis", shared_lock=True)
 
     @staticmethod
     def register_key(key):

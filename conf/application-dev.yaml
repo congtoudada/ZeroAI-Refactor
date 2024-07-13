@@ -1,5 +1,5 @@
 INCLUDE:
-  - conf/dev/global/log.yaml
+  - conf/dev/global/config.yaml
 
 # 全局服务
 service_list: []
@@ -13,12 +13,15 @@ stream_list:
 
 # 算法
 algorithm_list:
+  # 目标检测算法
   - path: modules/yolox_module/yolox/zero/component/yolox_comp.py
     conf: conf/dev/detection/yolox/yolox_person.yaml
+  # 业务算法
+  - path: src/business/count/component/count_comp.py
+    conf: conf/dev/business/count/count1.yaml
 
 app:
   running_file: bin/dev/runtime.pkl  # 框架运行时标识路径，运行时生成，删除该文件可以关闭算法端
   analysis_interval: 5  # 每隔x秒打印一次性能分析报告
 
-# 主进程更新帧率
-update_fps: 1
+update_fps: 1  # 主进程更新帧率

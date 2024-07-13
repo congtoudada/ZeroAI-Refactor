@@ -1,12 +1,9 @@
 import os
-import sys
-import time
 from typing import List
-
 import cv2
 from UltraDict import UltraDict
 from loguru import logger
-import numpy as np
+
 
 from zero.core.component.component import Component
 from zero.core.helper.save_video_helper import SaveVideoHelper
@@ -40,7 +37,8 @@ class BasedStreamComponent(Component, ABC):
         super().on_start()
         for i, input_port in enumerate(self.config.input_ports):
             # 初始化读字典
-            self.read_dict.append(UltraDict(name=input_port))
+            self.read_dict.append(UltraDict(name=input_port,
+                                            shared_lock=self.config.lock_mode))
             if not self.read_dict[i].__contains__(input_port):  # 如果字典不存在视频流输出Key，报错！
                 logger.error(f"{self.pname} 输入端口不存在: {input_port} 请检查拼写错误！")
                 break
@@ -72,14 +70,19 @@ class BasedStreamComponent(Component, ABC):
                 self.rtsp_writers.append(RtspKit(self.config.stream_rtsp_url, width, height, fps))
             # 初始化输出端口（可选）
             if self.config.output_ports and len(self.config.output_ports) > 0:
-                self.write_dict.append(UltraDict(name=f"{self.config.output_ports[i]}"))
+                self.write_dict.append(UltraDict(name=f"{self.config.output_ports[i]}",
+                                                 shared_lock=self.config.lock_mode))
+                self.write_dict[i][StreamKey.STREAM_CAM_ID.name] = cam_id
+                self.write_dict[i][StreamKey.STREAM_WIDTH.name] = width
+                self.write_dict[i][StreamKey.STREAM_HEIGHT.name] = height
+                self.write_dict[i][StreamKey.STREAM_FPS.name] = fps
 
     def on_update(self) -> bool:
         for i, input_port in enumerate(self.config.input_ports):
-            frame = self.resolve_stream(i)
-            ret = self.on_process_per_stream(i, frame)  # 由子类实现
+            frame, user_data = self.on_resolve_stream(i)  # 解析流
+            process_data = self.on_process_per_stream(i, frame, user_data)  # 处理流
             if self.config.stream_draw_vis_enable and frame is not None:
-                frame = self.on_draw_vis(i, frame, ret)
+                frame = self.on_draw_vis(i, frame, process_data)
                 if frame is not None and self.config.stream_draw_vis_resize:
                     # resize会涉及图像拷贝
                     cv2.imshow(self.window_name[i],
@@ -94,38 +97,41 @@ class BasedStreamComponent(Component, ABC):
             self.shared_memory[GlobalKey.EVENT_ESC].set()  # 退出程序
         return True
 
-    def resolve_stream(self, read_idx):
+    def on_resolve_stream(self, read_idx):
         """
-        根据下标解析视频流数据包
+        根据下标解析视频流数据包（默认只解析帧id和视频帧，如果有额外数据需用户额外处理）
         :param read_idx: 端口索引
-        :return: 最新帧图像（如果不存在最新帧返回None）
+        :return: 最新帧图像（如果不存在最新帧返回None）, 用户数据
         """
         # 只有不同帧才有必要计算
         current_cache_id = self.frame_id_cache[read_idx]  # 当前帧id
         stream_package = self.read_dict[read_idx][self.config.input_ports[read_idx]]  # 视频流数据包
+        if stream_package is None:  # 数据包未填充，返回
+            return None, None
         current_stream_id = stream_package[StreamKey.STREAM_PACKAGE_FRAME_ID.name]
         if current_cache_id != current_stream_id:
             self.frame_id_cache[read_idx] = current_stream_id
-            return stream_package[StreamKey.STREAM_PACKAGE_FRAME.name].copy()  # 拷贝图片返回，减少对共享内存的读写
+            return stream_package[StreamKey.STREAM_PACKAGE_FRAME.name].copy(), None  # 拷贝图片返回，减少对共享内存的读写
         else:
-            return None
+            return None, None
 
     @abstractmethod
-    def on_process_per_stream(self, idx, frame):
+    def on_process_per_stream(self, idx, frame, user_data):
         """
-        处理每一个视频帧
+        处理每一个视频帧（子类重写）
         :param idx: 端口索引
         :param frame: 最新帧图像（如果不存在最新帧返回None）
-        :return: 用于传递给on_draw_vis
+        :param user_data: 用户从流中解析的额外数据
+        :return: 处理后的数据，会传递给on_draw_vis
         """
         return None
 
-    def on_draw_vis(self, idx, frame, data):
+    def on_draw_vis(self, idx, frame, process_data):
         """
         可视化绘图函数
         :param idx: 端口索引
         :param frame: 最新帧图像（如果不存在最新帧返回None）
-        :param data: 处理后的数据
+        :param process_data: 处理后的数据
         :return: 绘制后的图像
         """
         return frame

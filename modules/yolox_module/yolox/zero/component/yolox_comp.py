@@ -10,6 +10,7 @@ from zero.core.component.based_stream_comp import BasedStreamComponent
 from zero.core.helper.analysis_helper import AnalysisHelper
 from zero.core.key.detection_key import DetectionKey
 from zero.core.key.global_key import GlobalKey
+from zero.core.key.stream_key import StreamKey
 from zero.utility.config_kit import ConfigKit
 from zero.utility.timer_kit import TimerKit
 
@@ -21,7 +22,6 @@ class YoloxComponent(BasedStreamComponent):
         self.pname = f"[ {os.getpid()}:yolox for {self.config.yolox_args_expn}]"
         # 自身定义
         self.predictor = None  # 推理模型
-        # self.timer = TimerKit()  # 计时器
 
     def on_start(self):
         """
@@ -38,12 +38,16 @@ class YoloxComponent(BasedStreamComponent):
 
     def on_update(self) -> bool:
         if super().on_update():
-            # 记录性能日志
-            AnalysisHelper.refresh(f"yolox for {self.config.yolox_args_expn}耗时",
-                                   f"{(self.update_timer.average_time * 1000):.3f}ms",
-                                   f"33.3ms")
+            if self.config.log_analysis:
+                # 记录性能日志
+                AnalysisHelper.refresh(f"yolox for {self.config.yolox_args_expn} max time",
+                                       f"{(self.update_timer.max_time * 1000):.3f}ms",
+                                       f"33.3ms")
+                AnalysisHelper.refresh(f"yolox for {self.config.yolox_args_expn} average time",
+                                       f"{(self.update_timer.average_time * 1000):.3f}ms",
+                                       f"33.3ms")
 
-    def on_process_per_stream(self, idx, frame):
+    def on_process_per_stream(self, idx, frame, user_data):
         """
         # yolox inference shape: [n,7]
         # [0,1,2,3]: ltrb bboxes (tsize分辨率下)
@@ -62,6 +66,7 @@ class YoloxComponent(BasedStreamComponent):
         #   [3]: y2
         # [4]: 置信度
         # [5]: 类别 (下标从0开始)
+        :param user_data:
         :param idx:
         :param frame:
         :return:
@@ -74,9 +79,10 @@ class YoloxComponent(BasedStreamComponent):
         outputs, img_info = self.predictor.inference(frame, None)
         result = outputs[0]  # List[tensor(n, 7)] -> tensor(n, 7)
         result = self.alignment_output(result, img_info)  # tensor(n, 6)
-        package = {DetectionKey.DET_PACKAGE_FRAME_ID: self.frame_id_cache[idx],
-                   DetectionKey.DET_PACKAGE_FRAME: frame,
-                   DetectionKey.DET_PACKAGE_RESULT: result}
+        # 填充输出
+        package = {StreamKey.STREAM_PACKAGE_FRAME_ID.name: self.frame_id_cache[idx],
+                   StreamKey.STREAM_PACKAGE_FRAME.name: frame,
+                   DetectionKey.DET_PACKAGE_RESULT.name: result}
         self.write_dict[idx][self.config.output_ports[idx]] = package  # 填充输出(result为None代表无目标)
         return result
 
@@ -94,7 +100,7 @@ class YoloxComponent(BasedStreamComponent):
             classes = np.expand_dims(classes, axis=1)
         return np.concatenate((bboxes, scores, classes), axis=1)
 
-    def on_draw_vis(self, idx, frame, data):
+    def on_draw_vis(self, idx, frame, process_data):
         """
         可视化函数
         :param idx:
@@ -102,36 +108,36 @@ class YoloxComponent(BasedStreamComponent):
         :param data: tensor(n,6)
         :return:
         """
-        if data is None:
+        if process_data is None:
             return frame
         text_scale = 1
         text_thickness = 1
         line_thickness = 2
         cv2.putText(frame, 'inference_fps:%.2f num:%d' %
                     (1. / max(1e-5, self.update_timer.average_time),
-                     data.shape[0]), (0, int(15 * text_scale)),
+                     process_data.shape[0]), (0, int(15 * text_scale)),
                     cv2.FONT_HERSHEY_PLAIN, text_scale, (0, 0, 255), thickness=text_thickness)
         # scale = min(self.config.yolox_args_tsize / frame.shape[0],
         #             self.config.yolox_args_tsize / frame.shape[1])
-        for i in range(data.shape[0]):
+        for i in range(process_data.shape[0]):
             # tlbr = data[i, :4] / scale
-            tlbr = data[i, :4]
+            tlbr = process_data[i, :4]
             x1, y1, w, h = tlbr[0], tlbr[1], tlbr[2] - tlbr[0], tlbr[3] - tlbr[1]
-            score = data[i, 4]
-            cls = int(data[i, 5])
+            score = process_data[i, 4]
+            cls = int(process_data[i, 5])
             if cls < len(self.config.detection_labels):
                 id_text = f"{self.config.detection_labels[cls]}({score:.2f})"
             else:
                 id_text = f"{score:.2f}"
             intbox = tuple(map(int, (x1, y1, x1 + w, y1 + h)))
             cv2.rectangle(frame, intbox[0:2], intbox[2:4],
-                          color=self.get_color(cls),
+                          color=self._get_color(cls),
                           thickness=line_thickness)
             cv2.putText(frame, id_text, (intbox[0], intbox[1]), cv2.FONT_HERSHEY_PLAIN, text_scale, (0, 0, 255),
                         thickness=text_thickness)
         return frame
 
-    def get_color(self, idx):
+    def _get_color(self, idx):
         idx = (1 + idx) * 3
         color = ((37 * idx) % 255, (17 * idx) % 255, (29 * idx) % 255)
         return color

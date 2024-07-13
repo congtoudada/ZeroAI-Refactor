@@ -1,5 +1,5 @@
 INCLUDE:
-  - conf/dev/global/log.yaml
+  - conf/dev/global/config.yaml
 stream:
   # 是否为实时视频流
   runtime_enable: False

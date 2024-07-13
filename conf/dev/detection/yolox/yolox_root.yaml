@@ -1,6 +1,6 @@
 # 所有目标检测算法不跟具体业务耦合，仅仅根据检测的对象分类
 INCLUDE:
-  - conf/dev/global/log.yaml
+  - conf/dev/global/config.yaml
   - conf/dev/global/based_stream.yaml
 
 yolox:
@@ -20,4 +20,4 @@ stream:
   save_video:
     enable: False  # 是否保存视频
   draw_vis:
-    enable: True  # 是否可视化
+    enable: False  # 是否可视化

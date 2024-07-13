@@ -21,7 +21,8 @@ class StreamComponent(Component):
     def __init__(self, shared_memory, config_path: str):
         super().__init__(shared_memory)
         self.config: StreamInfo = StreamInfo(ConfigKit.load(config_path))
-        self.stream_shared_memory = UltraDict(name=self.config.output_port)
+        self.stream_shared_memory = UltraDict(name=self.config.output_port,
+                                              shared_lock=self.config.lock_mode)
         self.pname = f"[ {os.getpid()}:camera{self.config.stream_cam_id} ]"
         self.cap = None
         self.frame_fps = 24

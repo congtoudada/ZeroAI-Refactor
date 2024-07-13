@@ -47,7 +47,7 @@ class LaunchComponent(Component):
         signal.signal(signal.SIGTERM, self.handle_termination)
 
         # self.shared_memory: dict = multiprocessing.Manager().dict()
-        self.shared_memory = UltraDict(name="global")
+        self.shared_memory = UltraDict(name="global", shared_lock=self.config.lock_mode)
         self.shared_memory[GlobalKey.EVENT_ESC.name] = self.esc_event
         self.shared_memory[GlobalKey.LAUNCH_COUNTER.name] = 0
         self.shared_memory[GlobalKey.ALL_READY.name] = False

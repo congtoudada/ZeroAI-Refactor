@@ -11,12 +11,10 @@ from zero.utility.config_kit import ConfigKit
 class BytetrackHelper:
     def __init__(self, config_path: str):
         self.config: BytetrackInfo = BytetrackInfo(ConfigKit.load(config_path))
-        self.pname = f"[ {os.getpid()}:bytetrack from {self.config.input_port[0]}]"
+        self.pname = f"[ {os.getpid()}:bytetrack ]"
         # byetrack 模型
-        self.tracker = None
-
-    def on_start(self):
         self.tracker = BYTETracker(self.config, frame_rate=self.config.bytetrack_args_fps)
+
 
     def inference(self, input_det):
         if input_det is None:

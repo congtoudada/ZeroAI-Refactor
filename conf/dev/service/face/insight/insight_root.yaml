@@ -1,5 +1,5 @@
 INCLUDE:
-  - conf/dev/global/log.yaml
+  - conf/dev/global/config.yaml
 insight:
   vis: False
   force_rebuild: True  # 每次运行无论本地是否有缓存都重新建库（不勾性能会很差，原因暂不明）
