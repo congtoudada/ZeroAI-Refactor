@@ -1,5 +1,4 @@
 from zero.core.info.base_info import BaseInfo
-from zero.core.key.global_key import GlobalKey
 
 
 class StreamInfo(BaseInfo):

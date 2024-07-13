@@ -80,6 +80,8 @@ class BasedStreamComponent(Component, ABC):
     def on_update(self) -> bool:
         for i, input_port in enumerate(self.config.input_ports):
             frame, user_data = self.on_resolve_stream(i)  # 解析流
+            if frame is not None and self.config.log_analysis:  # 记录算法耗时
+                self.update_timer.tic()
             process_data = self.on_process_per_stream(i, frame, user_data)  # 处理流
             if self.config.stream_draw_vis_enable and frame is not None:
                 frame = self.on_draw_vis(i, frame, process_data)
@@ -93,6 +95,8 @@ class BasedStreamComponent(Component, ABC):
                 self.video_writers[i].write(frame)
             if self.config.stream_rtsp_enable:
                 self.rtsp_writers[i].push(frame)
+            if frame is not None and self.config.log_analysis:  # 记录算法耗时
+                self.update_timer.toc()
         if cv2.waitKey(1) & 0xFF == ord('q'):
             self.shared_memory[GlobalKey.EVENT_ESC].set()  # 退出程序
         return True

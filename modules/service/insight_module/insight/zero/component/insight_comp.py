@@ -1,9 +1,9 @@
 import multiprocessing
 import os
 import sys
-import time
 
 import cv2
+from UltraDict import UltraDict
 from loguru import logger
 
 from insight.zero.component.face_recognizer import FaceRecognizer
@@ -22,10 +22,13 @@ class InsightComponent(Component):
         1.所有请求会发送到一个Req Queue，由Insight服务轮询处理。举例: Ultradict['FACE_REQ'].put({请求数据(含pid)})
         2.每个请求方需主动开辟一块共享内存作为Rsp Queue，Insight会把处理后的结果根据请求pid放到相应位置。举例: Ultradict['FACE_RSP'+pid].put({响应数据})
     """
+    SHARED_MEMORY_NAME = "insight_face"
+
     def __init__(self, shared_memory, config_path: str):
         super().__init__(shared_memory)
         self.config: InsightInfo = InsightInfo(ConfigKit.load(config_path))  # 配置文件内容
         self.pname = f"[ {os.getpid()}:insight_face ]"
+        self.face_shared_memory = UltraDict(name=InsightComponent.SHARED_MEMORY_NAME)
         self.req_queue = None  # 人脸请求队列
         self.database_file = os.path.join(os.path.dirname(self.config.insight_database),
                                           "database-{}.json".format(self.config.insight_rec_feature))  # 人脸特征库配置文件路径
@@ -39,7 +42,7 @@ class InsightComponent(Component):
         super().on_start()
         # 初始化请求缓存
         self.req_queue = multiprocessing.Manager().Queue()
-        self.shared_memory[FaceKey.FACE_REQ.name] = self.req_queue
+        self.face_shared_memory[FaceKey.FACE_REQ.name] = self.req_queue
 
     def on_update(self) -> bool:
         # 检查特征库是否需要重建
@@ -56,17 +59,17 @@ class InsightComponent(Component):
         # 处理请求
         while not self.req_queue.empty():
             self.infer_timer.tic()
-            req = self.req_queue.get()
-            cam_id = req[FaceKey.FACE_REQ_CAM_ID.name]  # 请求的摄像头id
-            pid = req[FaceKey.FACE_REQ_PID.name]  # 请求的进程
-            obj_id = req[FaceKey.FACE_REQ_OBJ_ID.name]  # 请求的对象id
-            face_image = req[FaceKey.FACE_REQ_IMAGE.name]  # 请求的图片
+            req_package = self.req_queue.get()
+            cam_id = req_package[FaceKey.FACE_REQ_CAM_ID.name]  # 请求的摄像头id
+            pid = req_package[FaceKey.FACE_REQ_PID.name]  # 请求的进程
+            obj_id = req_package[FaceKey.FACE_REQ_OBJ_ID.name]  # 请求的对象id
+            face_image = req_package[FaceKey.FACE_REQ_IMAGE.name]  # 请求的图片
             # 人脸识别处理
             per_id, score = self.face_model.search_face_image(face_image, self.config.insight_vis)
             # 响应输出结果
             rsp_key = FaceKey.FACE_RSP.name + str(pid)
-            if self.shared_memory.__contains__(rsp_key):
-                self.shared_memory[rsp_key].put({
+            if self.face_shared_memory.__contains__(rsp_key):
+                self.face_shared_memory[rsp_key].put({
                     FaceKey.FACE_RSP_OBJ_ID.name: obj_id,
                     FaceKey.FACE_RSP_PER_ID.name: per_id,
                     FaceKey.FACE_RSP_SCORE.name: score

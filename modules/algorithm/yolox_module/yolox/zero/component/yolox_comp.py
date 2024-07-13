@@ -1,7 +1,8 @@
 import os
+import time
+
 import cv2
 import numpy as np
-from loguru import logger
 
 from yolox.exp import get_exp
 from yolox.zero.component.predictor import create_zero_predictor
@@ -12,7 +13,6 @@ from zero.core.key.detection_key import DetectionKey
 from zero.core.key.global_key import GlobalKey
 from zero.core.key.stream_key import StreamKey
 from zero.utility.config_kit import ConfigKit
-from zero.utility.timer_kit import TimerKit
 
 
 class YoloxComponent(BasedStreamComponent):
@@ -144,8 +144,10 @@ class YoloxComponent(BasedStreamComponent):
 
 
 def create_process(shared_memory, config_path: str):
-    yoloxComp: YoloxComponent = YoloxComponent(shared_memory, config_path)  # 创建组件
-    yoloxComp.start()  # 初始化
+    comp = YoloxComponent(shared_memory, config_path)  # 创建组件
+    comp.start()  # 初始化
     # 初始化结束通知
     shared_memory[GlobalKey.LAUNCH_COUNTER.name] += 1
-    yoloxComp.update()  # 算法逻辑循环
+    while not shared_memory[GlobalKey.ALL_READY.name]:
+        time.sleep(0.1)
+    comp.update()  # 算法逻辑循环

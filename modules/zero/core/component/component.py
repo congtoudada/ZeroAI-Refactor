@@ -103,15 +103,15 @@ class Component(ABC):
         # 组件更新
         while True:
             if self.enable:
-                if self.config.log_analysis:  # 记录完整update耗时
-                    self.update_timer.tic()
+                # if self.config.log_analysis:  # 记录完整update耗时（记空帧耗时无意义）
+                #     self.update_timer.tic()
                 self.on_update()  # 先执行父组件的更新
                 if self.has_child:  # 多一层判断（更省性能？）
                     for child in self.children:  # 再执行子组件更新
                         if child.enable:
                             child.on_update()
-                if self.config.log_analysis:
-                    self.update_timer.toc()
+                # if self.config.log_analysis:
+                #     self.update_timer.toc()
             if self.esc_event.is_set():
                 for child in self.children:  # 先销毁子组件
                     child.on_destroy()

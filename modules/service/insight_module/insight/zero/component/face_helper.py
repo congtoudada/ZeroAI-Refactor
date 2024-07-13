@@ -1,8 +1,10 @@
 import os
 from typing import Dict
+from UltraDict import UltraDict
 from loguru import logger
 
 from insight.zero.component.face_process_helper import FaceProcessHelper
+from insight.zero.component.insight_comp import InsightComponent
 from insight.zero.info.face_helper_info import FaceHelperInfo
 from zero.utility.config_kit import ConfigKit
 
@@ -11,14 +13,14 @@ class FaceHelper:
     """
     人脸识别帮助类
     """
-    def __init__(self, shared_memory, config, cam_id, callback):
-        super().__init__(shared_memory)
+    def __init__(self, config, cam_id, callback):
         if isinstance(config, str):
             self.config: FaceHelperInfo = FaceHelperInfo(ConfigKit.load(config))
         else:
             self.config: FaceHelperInfo = config
         self.pname = f"[ {os.getpid()}:face_helper ]"
-        self.handler = FaceProcessHelper(shared_memory, self.config, cam_id, self.face_callback)
+        self.face_shared_memory = UltraDict(name=InsightComponent.SHARED_MEMORY_NAME)
+        self.handler = FaceProcessHelper(self.face_shared_memory, self.config, cam_id, self.face_callback)
         # key: obj_id
         # value: { "per_id": 1, "score": 0 }
         self.face_dict: Dict[int, dict] = {}  # 人脸识别结果集

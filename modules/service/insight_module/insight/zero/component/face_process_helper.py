@@ -11,8 +11,8 @@ class FaceProcessHelper:
     """
     人脸识别进程级帮助类（主要负责进程间请求和响应）
     """
-    def __init__(self, shared_memory, config, cam_id, callback):
-        self.shared_memory = shared_memory
+    def __init__(self, face_shared_memory, config, cam_id, callback):
+        self.face_shared_memory = face_shared_memory
         if isinstance(config, str):
             self.config: FaceHelperInfo = FaceHelperInfo(ConfigKit.load(config))
         else:
@@ -29,7 +29,7 @@ class FaceProcessHelper:
 
     def __init(self):
         # 创建接收队列
-        self.shared_memory[self.rsp_key] = self.rsp_queue
+        self.face_shared_memory[self.rsp_key] = self.rsp_queue
 
     def can_send(self, obj_id):
         if not self.send_lock.__contains__(obj_id):
@@ -47,7 +47,7 @@ class FaceProcessHelper:
         if self.can_send(obj_id):
             logger.info(f"{self.pname} 发送人脸识别请求: {obj_id}")
             self.send_lock.add(obj_id)
-            self.shared_memory[FaceKey.FACE_REQ.name].put({
+            self.face_shared_memory[FaceKey.FACE_REQ.name].put({
                 FaceKey.FACE_REQ_CAM_ID: self.cam_id,
                 FaceKey.FACE_REQ_PID: os.getpid(),
                 FaceKey.FACE_REQ_OBJ_ID: obj_id,

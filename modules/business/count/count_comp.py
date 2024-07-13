@@ -1,15 +1,14 @@
 import os
 import time
 from typing import Dict
-
 import cv2
 import numpy as np
 from loguru import logger
 
+from business.count.count_item import CountItem
+from business.count.count_info import CountInfo
 from bytetrack.zero.component.bytetrack_helper import BytetrackHelper
-from count.component.count_item import CountItem
-from src.business.count.info.count_info import CountInfo
-from yolox.deepsort_tracker.detection import Detection
+from simple_http.simple_http_helper import SimpleHttpHelper
 from zero.core.component.based_stream_comp import BasedStreamComponent
 from zero.core.helper.analysis_helper import AnalysisHelper
 from zero.core.key.detection_key import DetectionKey
@@ -18,8 +17,6 @@ from zero.core.key.stream_key import StreamKey
 from zero.utility.config_kit import ConfigKit
 from zero.utility.img_kit import ImgKit
 from zero.utility.object_pool import ObjectPool
-from zero.utility.timer_kit import TimerKit
-from zero.utility.web_kit import WebKit
 
 
 class CountComponent(BasedStreamComponent):
@@ -333,15 +330,18 @@ class CountComponent(BasedStreamComponent):
                 "status": status,
                 "shotImg": img_path
             }
-            WebKit.post(f"{WebKit.Prefix_url}/count", data)
-            logger.info(f"{self.pname}发送后端请求，路径: {WebKit.Prefix_url}/count")
+            # WebKit.post(f"{WebKit.Prefix_url}/count", data)
+            SimpleHttpHelper.post("count", data)
+
 
 
 def create_process(shared_memory, config_path: str):
     countComp: CountComponent = CountComponent(shared_memory, config_path)  # 创建组件
+    countComp.start()  # 初始化
     # 初始化结束通知
     shared_memory[GlobalKey.LAUNCH_COUNTER.name] += 1
-    countComp.start()  # 初始化
+    while not shared_memory[GlobalKey.ALL_READY.name]:
+        time.sleep(0.1)
     countComp.update()  # 算法逻辑循环
 
 

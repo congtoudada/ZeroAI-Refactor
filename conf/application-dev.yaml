@@ -2,22 +2,24 @@ INCLUDE:
   - conf/dev/global/config.yaml
 
 # 全局服务
-service_list: []
+service_list:
+  - path: modules/service/http_module/simple_http/simple_http_comp.py
+    conf: conf/dev/service/http/http.yaml
 #  - path: modules/insight_module/insight/zero/component/insight_comp.py
 #    conf: conf/dev/service/face/insight/insight.yaml
 
 # 视频流
 stream_list:
-  - path: modules/zero_module/zero/core/component/stream_comp.py
+  - path: modules/zero/core/component/stream_comp.py
     conf: conf/dev/stream/stream1.yaml
 
 # 算法
 algorithm_list:
   # 目标检测算法
-  - path: modules/yolox_module/yolox/zero/component/yolox_comp.py
+  - path: modules/algorithm/yolox_module/yolox/zero/component/yolox_comp.py
     conf: conf/dev/detection/yolox/yolox_person.yaml
   # 业务算法
-  - path: src/business/count/component/count_comp.py
+  - path: modules/business/count/count_comp.py
     conf: conf/dev/business/count/count1.yaml
 
 app:

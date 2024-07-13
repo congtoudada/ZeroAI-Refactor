@@ -7,8 +7,8 @@ import signal
 import cv2
 import numpy as np
 
-from modules.zero_module.zero import ConfigKit
-from modules.zero_module.zero import YamlKit
+from zero import ConfigKit
+from zero import YamlKit
 
 # 用户设置变量
 cap = cv2.VideoCapture("res/videos/renlian/renlian1.mp4")  # 打开本地视频
