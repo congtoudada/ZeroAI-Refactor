@@ -33,7 +33,7 @@ class FaceHelper:
         """
         self.handler.tick()
 
-    def can_send(self, obj_id, diff, per_y) -> bool:
+    def can_send(self, obj_id, diff, per_y, retry) -> bool:
         """
         是否可以发送
         :param obj_id:
@@ -41,6 +41,8 @@ class FaceHelper:
         :param per_y:
         :return:
         """
+        if retry > self.config.face_max_retry:
+            return False
         if self.face_dict.__contains__(obj_id) and self.face_dict[obj_id]['per_id'] != 1:  # 不是陌生人，不发送
             return False
         if not diff > self.config.face_min_send_interval:  # 不满足发送间隔，不发送

@@ -1,0 +1,7 @@
+INCLUDE:
+  - conf/dev/business/renlian/renlian_root.yaml
+  - conf/dev/business/renlian/renlian1_zone.yaml
+input_ports:  # 输入端口
+  - yolox-person1
+output_ports: []  # 输出端口
+

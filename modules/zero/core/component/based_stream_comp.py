@@ -6,6 +6,7 @@ from loguru import logger
 
 
 from zero.core.component.component import Component
+from zero.core.helper.analysis_helper import AnalysisHelper
 from zero.core.helper.save_video_helper import SaveVideoHelper
 from zero.core.info.based_stream_info import BasedStreamInfo
 from zero.core.key.global_key import GlobalKey
@@ -25,6 +26,7 @@ class BasedStreamComponent(Component, ABC):
         self.pname = f"[ {os.getpid()}:BasedStreamComp ]"
         self.read_dict = []  # 读视频流共享内存
         self.frame_id_cache = []  # 各视频流帧序号缓存，用于对比是否存在新帧
+        self.frames = []  # 各视频流当前帧
         self.window_name = []  # 窗口名
         self.output_dir = []  # 输出目录
         self.video_writers: List[SaveVideoHelper] = []  # 存储视频帮助类
@@ -48,6 +50,7 @@ class BasedStreamComponent(Component, ABC):
             fps = self.read_dict[i][StreamKey.STREAM_FPS.name]
             # 初始化视频流帧序号缓存
             self.frame_id_cache.append(0)
+            self.frames.append(None)
             # 初始化窗口名
             self.window_name.append(self.pname + ":" + input_port)
             # 初始化输出目录
@@ -78,8 +81,10 @@ class BasedStreamComponent(Component, ABC):
                 self.write_dict[i][StreamKey.STREAM_FPS.name] = fps
 
     def on_update(self) -> bool:
+        # 处理每一个输入端口
         for i, input_port in enumerate(self.config.input_ports):
             frame, user_data = self.on_resolve_stream(i)  # 解析流
+            self.frames[i] = frame
             if frame is not None and self.config.log_analysis:  # 记录算法耗时
                 self.update_timer.tic()
             process_data = self.on_process_per_stream(i, frame, user_data)  # 处理流
@@ -97,6 +102,15 @@ class BasedStreamComponent(Component, ABC):
                 self.rtsp_writers[i].push(frame)
             if frame is not None and self.config.log_analysis:  # 记录算法耗时
                 self.update_timer.toc()
+        # 记录性能日志
+        if self.config.log_analysis:
+            AnalysisHelper.refresh(f"{self.pname} max time",
+                                   f"{(self.update_timer.max_time * 1000):.3f}ms",
+                                   f"33.3ms")
+            AnalysisHelper.refresh(f"{self.pname} average time",
+                                   f"{(self.update_timer.average_time * 1000):.3f}ms",
+                                   f"33.3ms")
+        # opencv等待
         if cv2.waitKey(1) & 0xFF == ord('q'):
             self.shared_memory[GlobalKey.EVENT_ESC].set()  # 退出程序
         return True

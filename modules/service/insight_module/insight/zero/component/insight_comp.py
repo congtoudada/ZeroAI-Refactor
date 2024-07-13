@@ -66,6 +66,8 @@ class InsightComponent(Component):
             face_image = req_package[FaceKey.FACE_REQ_IMAGE.name]  # 请求的图片
             # 人脸识别处理
             per_id, score = self.face_model.search_face_image(face_image, self.config.insight_vis)
+            # if per_id != 1:
+            #     logger.info(f"{self.pname} 识别成功! cam_id: {cam_id}, obj_id: {obj_id}, per_id: {per_id}, score: {score}")
             # 响应输出结果
             rsp_key = FaceKey.FACE_RSP.name + str(pid)
             if self.face_shared_memory.__contains__(rsp_key):

@@ -10,7 +10,6 @@ from business.count.count_info import CountInfo
 from bytetrack.zero.component.bytetrack_helper import BytetrackHelper
 from simple_http.simple_http_helper import SimpleHttpHelper
 from zero.core.component.based_stream_comp import BasedStreamComponent
-from zero.core.helper.analysis_helper import AnalysisHelper
 from zero.core.key.detection_key import DetectionKey
 from zero.core.key.global_key import GlobalKey
 from zero.core.key.stream_key import StreamKey
@@ -20,6 +19,9 @@ from zero.utility.object_pool import ObjectPool
 
 
 class CountComponent(BasedStreamComponent):
+    """
+    计数组件
+    """
     def __init__(self, shared_memory, config_path: str):
         super().__init__(shared_memory)
         self.config: CountInfo = CountInfo(ConfigKit.load(config_path))
@@ -36,13 +38,13 @@ class CountComponent(BasedStreamComponent):
         self.red_vecs = []  # 预计算红色向量集合
         self.green_points = []  # 预计算绿色点位置集合
         self.green_vecs = []  # 预计算绿色向量集合
-        self.tracker: BytetrackHelper = BytetrackHelper(self.config.count_mot_config)
+        self.tracker: BytetrackHelper = BytetrackHelper(self.config.count_mot_config)  # 追踪器
 
     def on_start(self):
         super().on_start()
         self.cam_id = self.read_dict[0][StreamKey.STREAM_CAM_ID.name]
-        self.stream_width = self.read_dict[0][StreamKey.STREAM_WIDTH.name]
-        self.stream_height = self.read_dict[0][StreamKey.STREAM_HEIGHT.name]
+        self.stream_width = int(self.read_dict[0][StreamKey.STREAM_WIDTH.name])
+        self.stream_height = int(self.read_dict[0][StreamKey.STREAM_HEIGHT.name])
         # 预计算
         self.red_vecs.clear()
         self.green_vecs.clear()
@@ -62,16 +64,8 @@ class CountComponent(BasedStreamComponent):
                 self.green_vecs.append(green / np.linalg.norm(green))
 
     def on_update(self) -> bool:
-        if super().on_update():
-            if self.config.log_analysis:
-                # 记录性能日志
-                AnalysisHelper.refresh(f"count for {self.config.input_ports[0]} max time",
-                                       f"{(self.update_timer.max_time * 1000):.3f}ms",
-                                       f"33.3ms")
-                AnalysisHelper.refresh(f"count for {self.config.input_ports[0]} average time",
-                                       f"{(self.update_timer.average_time * 1000):.3f}ms",
-                                       f"33.3ms")
-        self.release_unused()  # 清理无用资源
+        self.release_unused()  # 清理无用资源（一定要在最前面调用）
+        super().on_update()
         return True
 
     def on_resolve_stream(self, read_idx):
@@ -196,13 +190,40 @@ class CountComponent(BasedStreamComponent):
                 ret = self._get_dir(item.red_seq[0] == 0, self.config.count_reverse)
                 if ret:
                     self.in_count += 1
-                    self.send_result(frame, 1, item.ltrb)
+                    self.send_result(frame, 1, item)
                 else:
                     self.out_count += 1
-                    self.send_result(frame, 2, item.ltrb)
+                    self.send_result(frame, 2, item)
                 # 重置计数器
                 item.red_seq.pop(0)
                 item.green_seq.pop(0)
+
+    def send_result(self, frame, status: int, item: CountItem):
+        """
+        结果通知
+        :param status: 1进2出
+        :param item:
+        :return:
+        """
+        # 导出图
+        time_str = time.strftime('%Y-%m-%d_%H-%M-%S', time.localtime())
+        status_str = "In" if status == 1 else "Out"
+        img_path = os.path.join(self.output_dir[0], f"{time_str}_{status_str}.jpg")
+        img_shot = ImgKit.crop_img(frame, item.ltrb)
+        if self.config.stream_export_img_enable:
+            cv2.imwrite(img_path, img_shot)
+            logger.info(f"{self.pname} 存图成功，路径: {img_path}")
+
+        if self.config.stream_web_enable:
+            # 通知后端
+            data = {
+                "recordTime": time_str,
+                "camId": self.cam_id,
+                "status": status,
+                "shotImg": img_path
+            }
+            # WebKit.post(f"{WebKit.Prefix_url}/count", data)
+            SimpleHttpHelper.post("count", data)
 
     def on_destroy_obj(self, obj_id):
         pass
@@ -306,43 +327,15 @@ class CountComponent(BasedStreamComponent):
                 return 1
         return 0
 
-    def send_result(self, frame, status: int, ltrb):
-        """
-        结果通知
-        :param status: 1进2出
-        :param ltrb: 裁剪用ltrb
-        :return:
-        """
-        # 导出图
-        time_str = time.strftime('%Y-%m-%d_%H-%M-%S', time.localtime())
-        status_str = "In" if status == 1 else "Out"
-        img_path = os.path.join(self.output_dir[0], f"{time_str}_{status_str}.jpg")
-        img_shot = ImgKit.crop_img(frame, ltrb)
-        if self.config.stream_export_img_enable:
-            cv2.imwrite(img_path, img_shot)
-            logger.info(f"{self.pname}存图成功，路径: {img_path}")
-
-        if self.config.stream_web_enable:
-            # 通知后端
-            data = {
-                "recordTime": time_str,
-                "camId": self.cam_id,
-                "status": status,
-                "shotImg": img_path
-            }
-            # WebKit.post(f"{WebKit.Prefix_url}/count", data)
-            SimpleHttpHelper.post("count", data)
-
-
 
 def create_process(shared_memory, config_path: str):
-    countComp: CountComponent = CountComponent(shared_memory, config_path)  # 创建组件
-    countComp.start()  # 初始化
+    comp: CountComponent = CountComponent(shared_memory, config_path)  # 创建组件
+    comp.start()  # 初始化
     # 初始化结束通知
     shared_memory[GlobalKey.LAUNCH_COUNTER.name] += 1
     while not shared_memory[GlobalKey.ALL_READY.name]:
         time.sleep(0.1)
-    countComp.update()  # 算法逻辑循环
+    comp.update()  # 算法逻辑循环
 
 
 if __name__ == '__main__':

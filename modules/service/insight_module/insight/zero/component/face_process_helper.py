@@ -48,19 +48,19 @@ class FaceProcessHelper:
             logger.info(f"{self.pname} 发送人脸识别请求: {obj_id}")
             self.send_lock.add(obj_id)
             self.face_shared_memory[FaceKey.FACE_REQ.name].put({
-                FaceKey.FACE_REQ_CAM_ID: self.cam_id,
-                FaceKey.FACE_REQ_PID: os.getpid(),
-                FaceKey.FACE_REQ_OBJ_ID: obj_id,
-                FaceKey.FACE_REQ_IMAGE: image
+                FaceKey.FACE_REQ_CAM_ID.name: self.cam_id,
+                FaceKey.FACE_REQ_PID.name: os.getpid(),
+                FaceKey.FACE_REQ_OBJ_ID.name: obj_id,
+                FaceKey.FACE_REQ_IMAGE.name: image
             })
 
     def tick(self):
         # 处理响应队列
         while not self.rsp_queue.empty():
             data = self.rsp_queue.get()
-            obj_id = data[FaceKey.FACE_RSP_OBJ_ID]
-            per_id = data[FaceKey.FACE_RSP_PER_ID]
-            score = data[FaceKey.FACE_RSP_SCORE]
+            obj_id = data[FaceKey.FACE_RSP_OBJ_ID.name]
+            per_id = data[FaceKey.FACE_RSP_PER_ID.name]
+            score = data[FaceKey.FACE_RSP_SCORE.name]
             self.callback(obj_id, per_id, score)  # 触发回调事件
             self.send_lock.remove(obj_id)  # 解锁对象，使其可以再次发送请求
 

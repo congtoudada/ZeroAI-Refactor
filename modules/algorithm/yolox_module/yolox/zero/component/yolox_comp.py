@@ -8,7 +8,6 @@ from yolox.exp import get_exp
 from yolox.zero.component.predictor import create_zero_predictor
 from yolox.zero.info.yolox_info import YoloxInfo
 from zero.core.component.based_stream_comp import BasedStreamComponent
-from zero.core.helper.analysis_helper import AnalysisHelper
 from zero.core.key.detection_key import DetectionKey
 from zero.core.key.global_key import GlobalKey
 from zero.core.key.stream_key import StreamKey
@@ -35,17 +34,6 @@ class YoloxComponent(BasedStreamComponent):
         self.predictor = create_zero_predictor(self.config, exp, self.pname)
         for i, output_port in enumerate(self.config.output_ports):
             self.write_dict[i][output_port] = None  # yolox package
-
-    def on_update(self) -> bool:
-        if super().on_update():
-            if self.config.log_analysis:
-                # 记录性能日志
-                AnalysisHelper.refresh(f"yolox for {self.config.yolox_args_expn} max time",
-                                       f"{(self.update_timer.max_time * 1000):.3f}ms",
-                                       f"33.3ms")
-                AnalysisHelper.refresh(f"yolox for {self.config.yolox_args_expn} average time",
-                                       f"{(self.update_timer.average_time * 1000):.3f}ms",
-                                       f"33.3ms")
 
     def on_process_per_stream(self, idx, frame, user_data):
         """
