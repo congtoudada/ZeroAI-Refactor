@@ -1,6 +1,5 @@
 import argparse
 
-from zero.core.component.component_driver import ComponentDriver
 from zero.core.component.launch_comp import LaunchComponent
 
 
@@ -13,6 +12,7 @@ def make_parser():
 if __name__ == '__main__':
     # 解析args
     args = make_parser().parse_args()
-    launcher = LaunchComponent(args.application)
-    ComponentDriver.execute(launcher)
+    comp = LaunchComponent(args.application)
+    comp.start()
+    comp.update()
 

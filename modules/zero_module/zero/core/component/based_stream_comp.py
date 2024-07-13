@@ -1,0 +1,136 @@
+import os
+import sys
+import time
+from typing import List
+
+import cv2
+from UltraDict import UltraDict
+from loguru import logger
+import numpy as np
+
+from zero.core.component.component import Component
+from zero.core.helper.save_video_helper import SaveVideoHelper
+from zero.core.info.based_stream_info import BasedStreamInfo
+from zero.core.key.global_key import GlobalKey
+from zero.core.key.stream_key import StreamKey
+from zero.utility.rtsp_kit import RtspKit
+from zero.utility.timer_kit import TimerKit
+from abc import ABC, abstractmethod
+
+
+class BasedStreamComponent(Component, ABC):
+    """
+    基于视频流的算法组件
+    """
+    def __init__(self, shared_memory):
+        super().__init__(shared_memory)
+        self.config: BasedStreamInfo = None
+        self.pname = f"[ {os.getpid()}:BasedStreamComp ]"
+        self.read_dict = []  # 读视频流共享内存
+        self.frame_id_cache = []  # 各视频流帧序号缓存，用于对比是否存在新帧
+        self.window_name = []  # 窗口名
+        self.output_dir = []  # 输出目录
+        self.video_writers: List[SaveVideoHelper] = []  # 存储视频帮助类
+        self.rtsp_writers: List[RtspKit] = []  # rtsp推流工具
+        self.write_dict = []  # 输出字典
+        self.process_timer = TimerKit()  # 计算处理时间
+        # self._tic = False
+
+    def on_start(self):
+        super().on_start()
+        for i, input_port in enumerate(self.config.input_ports):
+            # 初始化读字典
+            self.read_dict.append(UltraDict(name=input_port))
+            if not self.read_dict[i].__contains__(input_port):  # 如果字典不存在视频流输出Key，报错！
+                logger.error(f"{self.pname} 输入端口不存在: {input_port} 请检查拼写错误！")
+                break
+            cam_id = self.read_dict[i][StreamKey.STREAM_CAM_ID.name]  # 摄像头id
+            width = self.read_dict[i][StreamKey.STREAM_WIDTH.name]
+            height = self.read_dict[i][StreamKey.STREAM_HEIGHT.name]
+            fps = self.read_dict[i][StreamKey.STREAM_FPS.name]
+            # 初始化视频流帧序号缓存
+            self.frame_id_cache.append(0)
+            # 初始化窗口名
+            self.window_name.append(self.pname + ":" + input_port)
+            # 初始化输出目录
+            self.output_dir.append(os.path.join(self.config.stream_output_dir,
+                                                f"camera{cam_id}"))
+            os.makedirs(self.output_dir[i], exist_ok=True)
+            # 初始化视频存储
+            if self.config.stream_save_video_enable:
+                # 设置输出文件夹
+                filename = f"{self.config.stream_save_video_filename}_CamID{cam_id}"
+                output_path = os.path.join(self.output_dir[i], f"{filename}.mp4")
+                video_writer = SaveVideoHelper(output_path, self.config.stream_save_video_resize,
+                                               self.config.stream_save_video_width,
+                                               self.config.stream_save_video_height,
+                                               self.config.stream_save_video_fps)
+                self.video_writers.append(video_writer)
+                logger.info(f"{self.pname} 视频输出路径: {output_path}")
+            # 初始化rtsp
+            if self.config.stream_rtsp_enable:
+                self.rtsp_writers.append(RtspKit(self.config.stream_rtsp_url, width, height, fps))
+            # 初始化输出端口（可选）
+            if self.config.output_ports and len(self.config.output_ports) > 0:
+                self.write_dict.append(UltraDict(name=f"{self.config.output_ports[i]}"))
+
+    def on_update(self) -> bool:
+        for i, input_port in enumerate(self.config.input_ports):
+            frame = self.resolve_stream(i)
+            ret = self.on_process_per_stream(i, frame)  # 由子类实现
+            if self.config.stream_draw_vis_enable and frame is not None:
+                frame = self.on_draw_vis(i, frame, ret)
+                if frame is not None and self.config.stream_draw_vis_resize:
+                    # resize会涉及图像拷贝
+                    cv2.imshow(self.window_name[i],
+                               cv2.resize(frame, (self.config.stream_draw_vis_width, self.config.stream_draw_vis_height)))
+                else:
+                    cv2.imshow(self.window_name[i], frame)
+            if self.config.stream_save_video_enable:
+                self.video_writers[i].write(frame)
+            if self.config.stream_rtsp_enable:
+                self.rtsp_writers[i].push(frame)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            self.shared_memory[GlobalKey.EVENT_ESC].set()  # 退出程序
+        return True
+
+    def resolve_stream(self, read_idx):
+        """
+        根据下标解析视频流数据包
+        :param read_idx: 端口索引
+        :return: 最新帧图像（如果不存在最新帧返回None）
+        """
+        # 只有不同帧才有必要计算
+        current_cache_id = self.frame_id_cache[read_idx]  # 当前帧id
+        stream_package = self.read_dict[read_idx][self.config.input_ports[read_idx]]  # 视频流数据包
+        current_stream_id = stream_package[StreamKey.STREAM_PACKAGE_FRAME_ID.name]
+        if current_cache_id != current_stream_id:
+            self.frame_id_cache[read_idx] = current_stream_id
+            return stream_package[StreamKey.STREAM_PACKAGE_FRAME.name].copy()  # 拷贝图片返回，减少对共享内存的读写
+        else:
+            return None
+
+    @abstractmethod
+    def on_process_per_stream(self, idx, frame):
+        """
+        处理每一个视频帧
+        :param idx: 端口索引
+        :param frame: 最新帧图像（如果不存在最新帧返回None）
+        :return: 用于传递给on_draw_vis
+        """
+        return None
+
+    def on_draw_vis(self, idx, frame, data):
+        """
+        可视化绘图函数
+        :param idx: 端口索引
+        :param frame: 最新帧图像（如果不存在最新帧返回None）
+        :param data: 处理后的数据
+        :return: 绘制后的图像
+        """
+        return frame
+
+    def on_destroy(self):
+        for vid in self.video_writers:
+            vid.on_destroy()
+        super().on_destroy()

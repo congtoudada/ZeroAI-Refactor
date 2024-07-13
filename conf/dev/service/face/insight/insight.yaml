@@ -1,0 +1,2 @@
+INCLUDE:
+  - conf/dev/service/face/insight/insight_root.yaml
