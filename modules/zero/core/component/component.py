@@ -29,7 +29,7 @@ class Component(ABC):
 
     def on_start(self):
         # 绑定退出事件（根组件绑定即可）
-        if not self.is_child and self.shared_memory:
+        if not self.is_child and self.shared_memory is not None:
             self.esc_event = self.shared_memory[GlobalKey.EVENT_ESC.name]
         # 初始化日志模块，只有root组件才需要配置
         if not self.is_child:
@@ -114,8 +114,19 @@ class Component(ABC):
                 #     self.update_timer.toc()
             if self.esc_event.is_set():
                 for child in self.children:  # 先销毁子组件
+                    child.pause()
                     child.on_destroy()
+                self.pause()
                 self.on_destroy()  # 再销毁父组件
                 return
             if self.enable_sleep:
-                time.sleep(self._update_fps)
+                try:
+                    time.sleep(self._update_fps)
+                except KeyboardInterrupt:
+                    # 当用户按下Ctrl+C时，会进入这个except块
+                    # 在这里，你可以执行一些清理工作，比如关闭文件、释放资源等
+                    # 然后程序正常结束
+                    self.pause()
+                    self.on_destroy()
+
+

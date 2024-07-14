@@ -97,10 +97,9 @@ class LaunchComponent(Component):
         self.analysis_flag += 1
         if self.analysis_flag >= self.config.app_analysis_interval:  # 打印分析报告
             self.analysis_flag = 0
-            AnalysisHelper.show()
+            if not self.esc_event.is_set():
+                AnalysisHelper.show()
         if not os.path.exists(self.config.app_running_file):  # 检测系统运行
-            self.esc_event.set()
-        if cv2.waitKey(1) & 0xFF == ord('q'):
             self.esc_event.set()
         return False
 

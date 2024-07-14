@@ -5,6 +5,9 @@ INCLUDE:
   - conf/dev/detection/labels/helmet_labels.yaml
 stream:
   output_dir: output/business/helmet  # 输出目录
+  save_video:
+    filename: helmet
 helmet:
-  valid_count: 10
-  lost_frames: 60
+  valid_count: 5  # 对象有效帧阈值
+  lost_frames: 60  # 消失多少帧丢弃
+  y_sort: False  # 分配id前进行y轴排序（时间换精度）

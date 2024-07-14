@@ -57,7 +57,7 @@ class BasedStreamComponent(Component, ABC):
             # 初始化视频存储
             if self.config.stream_save_video_enable:
                 # 设置输出文件夹
-                filename = f"{self.config.stream_save_video_filename}_CamID{cam_id}"
+                filename = f"{self.config.stream_save_video_filename}_camId{cam_id}"
                 output_path = os.path.join(self.output_dir[i], f"{filename}.mp4")
                 video_writer = SaveVideoHelper(output_path, self.config.stream_save_video_resize,
                                                self.config.stream_save_video_width,
@@ -91,7 +91,8 @@ class BasedStreamComponent(Component, ABC):
                     if self.config.stream_draw_vis_resize:
                         # resize会涉及图像拷贝
                         cv2.imshow(self.window_name[i],
-                                   cv2.resize(frame, (self.config.stream_draw_vis_width, self.config.stream_draw_vis_height)))
+                                   cv2.resize(frame,
+                                              (self.config.stream_draw_vis_width, self.config.stream_draw_vis_height)))
                     else:
                         cv2.imshow(self.window_name[i], frame)
             if frame is not None and self.config.stream_save_video_enable:
@@ -110,7 +111,7 @@ class BasedStreamComponent(Component, ABC):
                                    f"33.3ms")
         # opencv等待
         if cv2.waitKey(1) & 0xFF == ord('q'):
-            self.shared_memory[GlobalKey.EVENT_ESC].set()  # 退出程序
+            self.shared_memory[GlobalKey.EVENT_ESC.name].set()  # 退出程序
         return True
 
     def on_resolve_per_stream(self, read_idx):

@@ -4,13 +4,12 @@ from cv2 import VideoWriter
 
 class SaveVideoHelper:
     def __init__(self, output_path, enable_resize, width, height, fps=24):
-        super().__init__(None)
         self.output_path = None
         self.vid_writer: VideoWriter = None
-        self.fps = 24
+        self.fps = fps
         self.enable_resize = enable_resize
-        self.width = 640
-        self.height = 480
+        self.width = width
+        self.height = height
         self.set_output(output_path, fps, width, height)
 
     def set_output(self, output_path, fps, width, height):

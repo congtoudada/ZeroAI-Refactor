@@ -24,6 +24,7 @@ class HelmetComponent(BasedStreamComponent):
     """
     规范佩戴安全帽检测组件
     """
+
     def __init__(self, shared_memory, config_path: str):
         super().__init__(shared_memory)
         self.config: HelmetInfo = HelmetInfo(ConfigKit.load(config_path))
@@ -43,9 +44,6 @@ class HelmetComponent(BasedStreamComponent):
 
     def on_update(self) -> bool:
         self.release_unused()  # 清理无用资源（一定要在最前面调用）
-        for i in range(len(self.helmet_records)):
-            self.record_pool.push(self.helmet_records[i])
-        self.helmet_records.clear()  # 清空安全帽检测记录
         super().on_update()
         return True
 
@@ -70,6 +68,9 @@ class HelmetComponent(BasedStreamComponent):
             return None
 
         if idx == 0:  # 安全帽
+            for i in range(len(self.helmet_records)):
+                self.record_pool.push(self.helmet_records[i])
+            self.helmet_records.clear()  # 清空安全帽检测记录
             for i, item in enumerate(input_det):
                 ltrb = (item[0], item[1], item[2], item[3])
                 score = item[4]
@@ -87,10 +88,21 @@ class HelmetComponent(BasedStreamComponent):
     def _helmet_core(self, frame, input_mot, current_frame_id, width, height) -> bool:
         if input_mot is None:
             return
+        # 时间换精度: 根据t排序（y轴排序），配合包围盒匹配，可以使精度更高
+        if self.config.helmet_y_sort:
+            sort_indices = np.argsort(input_mot[:, 1])
+            input_mot = input_mot[sort_indices]
+            self.helmet_records.sort(key=lambda x: x.ltrb[1])
         # 遍历每个人
         for i, obj in enumerate(input_mot):
             ltrb = obj[:4]
-            match_idx = MatchRecordHelper.match_bbox(ltrb, [item.ltrb for item in self.helmet_records])
+            # 包围盒匹配（满足就返回）
+            match_idx = MatchRecordHelper.match_bbox(ltrb, self.helmet_records)
+            # 距离匹配（锁定上半身）
+            # w = ltrb[2] - ltrb[0]
+            # h = ltrb[3] - ltrb[1]
+            # match_idx = MatchRecordHelper.match_distance_l2(ltrb + (0, 0, 0, -h/2),
+            #                                                 self.helmet_records, max_distance=(w+h)/2)
             if match_idx != -1:  # 存在匹配项
                 obj_id = int(obj[6])
                 helmet = self.helmet_records[match_idx]
@@ -103,15 +115,17 @@ class HelmetComponent(BasedStreamComponent):
                     self.data_dict[obj_id].update(current_frame_id, helmet.cls)
                 # 计算结果
                 self.process_result(frame, self.data_dict[obj_id], ltrb)  # 满足异常条件就记录
+                # 匹配过的record需标记
+                helmet.match_action(obj_id)
 
     def process_result(self, frame, helmet_item: HelmetItem, ltrb):
-        # 没有报过警且异常状态保持一段时间
+        # 没有报过警且异常状态保持一段时间才发送
         if not helmet_item.has_warn and helmet_item.get_valid_count() > self.config.helmet_valid_count:
             if helmet_item.cls == 0 or helmet_item.cls == 2:
-                logger.info(f"安全帽佩戴异常: obj_id{helmet_item.obj_id} cls:{helmet_item.cls}")
+                logger.info(f"安全帽佩戴异常: obj_id:{helmet_item.obj_id} cls:{helmet_item.cls}")
                 helmet_item.has_warn = True  # 一旦视为异常，则一直为异常，避免一个人重复报警
                 shot_img = ImgKit_img_box.draw_img_box(frame, ltrb)
-                WarnHelper.send_warn_result(self.pname, self.output_dir, self.cam_id, 2, 1,
+                WarnHelper.send_warn_result(self.pname, self.output_dir[0], self.cam_id, 2, 1,
                                             shot_img, self.config.stream_export_img_enable,
                                             self.config.stream_web_enable)
 
@@ -128,8 +142,8 @@ class HelmetComponent(BasedStreamComponent):
     def on_draw_vis(self, idx, frame, input_mot):
         if input_mot is None:  # 检测安全帽的端口，不显示任何内容
             return None
-        text_scale = 1
-        text_thickness = 1
+        text_scale = 2
+        text_thickness = 2
         line_thickness = 2
         # 标题线
         num = 0 if input_mot is None else input_mot.shape[0]
@@ -163,7 +177,7 @@ class HelmetComponent(BasedStreamComponent):
             score = item.score
             cv2.rectangle(frame, pt1=(int(ltrb[0]), int(ltrb[1])), pt2=(int(ltrb[2]), int(ltrb[3])),
                           color=(0, 0, 255), thickness=line_thickness)
-            id_text = f"{self.config.detection_labels[cls]}({score:.2f})"
+            id_text = f"obj:{item.match_id} {self.config.detection_labels[cls]}({score:.2f})"
             cv2.putText(frame, id_text, (int(ltrb[0]), int(ltrb[1])), cv2.FONT_HERSHEY_PLAIN,
                         text_scale, (0, 0, 255), thickness=text_thickness)
         # 可视化并返回
@@ -173,6 +187,7 @@ class HelmetComponent(BasedStreamComponent):
         idx = (1 + idx) * 3
         color = ((37 * idx) % 255, (17 * idx) % 255, (29 * idx) % 255)
         return color
+
 
 def create_process(shared_memory, config_path: str):
     comp: HelmetComponent = HelmetComponent(shared_memory, config_path)  # 创建组件
