@@ -20,4 +20,5 @@ class BasedStreamInfo(BaseInfo):
         self.stream_web_enable = False  # 是否与web交互
         self.stream_rtsp_enable = False  # 是否推rtsp流
         self.stream_rtsp_url = ""  # rtsp推流路径
+        self.stream_mot_config = ""  # mot配置路径
         super().__init__(data)

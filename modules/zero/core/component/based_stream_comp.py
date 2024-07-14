@@ -86,16 +86,17 @@ class BasedStreamComponent(Component, ABC):
                 self.update_timer.tic()
             process_data = self.on_process_per_stream(i, frame, user_data)  # 处理流
             if self.config.stream_draw_vis_enable and frame is not None:
-                frame = self.on_draw_vis(i, frame, process_data)
-                if frame is not None and self.config.stream_draw_vis_resize:
-                    # resize会涉及图像拷贝
-                    cv2.imshow(self.window_name[i],
-                               cv2.resize(frame, (self.config.stream_draw_vis_width, self.config.stream_draw_vis_height)))
-                else:
-                    cv2.imshow(self.window_name[i], frame)
-            if self.config.stream_save_video_enable:
+                frame = self.on_draw_vis(i, frame, process_data)  # 在多输入端口时，通常只有一个端口返回frame
+                if frame is not None:
+                    if self.config.stream_draw_vis_resize:
+                        # resize会涉及图像拷贝
+                        cv2.imshow(self.window_name[i],
+                                   cv2.resize(frame, (self.config.stream_draw_vis_width, self.config.stream_draw_vis_height)))
+                    else:
+                        cv2.imshow(self.window_name[i], frame)
+            if frame is not None and self.config.stream_save_video_enable:
                 self.video_writers[i].write(frame)
-            if self.config.stream_rtsp_enable:
+            if frame is not None and self.config.stream_rtsp_enable:
                 self.rtsp_writers[i].push(frame)
             if frame is not None and self.config.log_analysis:  # 记录算法耗时
                 self.update_timer.toc()
@@ -121,7 +122,7 @@ class BasedStreamComponent(Component, ABC):
         # 只有不同帧才有必要计算
         current_cache_id = self.frame_id_cache[read_idx]  # 当前帧id
         stream_package = self.read_dict[read_idx][self.config.input_ports[read_idx]]  # 视频流数据包
-        if stream_package is None:  # 数据包未填充，返回
+        if stream_package is None:  # 上一个阶段数据包未填充，返回
             return None, None
         current_stream_id = stream_package[StreamKey.STREAM_PACKAGE_FRAME_ID.name]
         if current_cache_id != current_stream_id:

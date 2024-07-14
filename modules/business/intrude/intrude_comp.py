@@ -22,8 +22,8 @@ class IntrudeComponent(BasedStreamComponent):
     """
     特定区域入侵检测
     """
-    def __init__(self, shared_data, config_path: str):
-        super().__init__(shared_data)
+    def __init__(self, shared_memory, config_path: str):
+        super().__init__(shared_memory)
         self.config: IntrudeInfo = IntrudeInfo(ConfigKit.load(config_path))
         self.pname = f"[ {os.getpid()}:intrude for {self.config.input_ports[0]}]"
         self.pool: ObjectPool = ObjectPool(20, IntrudeItem)
@@ -108,11 +108,11 @@ class IntrudeComponent(BasedStreamComponent):
                 if not item.has_warn and item.get_valid_count() > self.config.intrude_valid_count:
                     logger.info(f"{self.pname} obj_id: {obj_id} 入侵异常")
                     shot_img = ImgKit.crop_img(frame, ltrb)
+                    item.has_warn = True
                     WarnHelper.send_warn_result(self.pname, self.output_dir[0], self.cam_id,
                                                 4, 1, shot_img,
                                                 self.config.stream_export_img_enable,
                                                 self.config.stream_web_enable)
-                    item.has_warn = True
 
     def release_unused(self):
         """
@@ -183,19 +183,19 @@ class IntrudeComponent(BasedStreamComponent):
                     screen_y = int((ltrb[1] + ltrb[3]) * 0.5)
                     cv2.circle(frame, (screen_x, screen_y), 4, (118, 154, 242), line_thickness)
                     cv2.rectangle(frame, pt1=(int(ltrb[0]), int(ltrb[1])), pt2=(int(ltrb[2]), int(ltrb[3])),
-                                  color=(0, 0, 255), thickness=1)
+                                  color=(0, 0, 255), thickness=line_thickness)
                     cv2.putText(frame, f"{obj_id}",
                                 (int(ltrb[0]), int(ltrb[1])),
-                                cv2.FONT_HERSHEY_PLAIN, 1, (0, 0, 255), thickness=1)
+                                cv2.FONT_HERSHEY_PLAIN, 1, (0, 0, 255), thickness=text_thickness)
                     if self.data_dict.__contains__(obj_id):
                         if self.data_dict[obj_id].has_warn:
                             cv2.putText(frame, "error",
                                         (int(ltrb[0] + 50), int(ltrb[1])),
-                                        cv2.FONT_HERSHEY_PLAIN, 1, (0, 0, 255), thickness=1)
+                                        cv2.FONT_HERSHEY_PLAIN, 1, (0, 0, 255), thickness=text_thickness)
                         else:
                             cv2.putText(frame, "normal",
                                         (int(ltrb[0] + 50), int(ltrb[1])),
-                                        cv2.FONT_HERSHEY_PLAIN, 1, (0, 0, 255), thickness=1)
+                                        cv2.FONT_HERSHEY_PLAIN, 1, (0, 0, 255), thickness=text_thickness)
         # 可视化并返回
         return frame
 

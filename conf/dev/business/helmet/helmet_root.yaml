@@ -1,0 +1,10 @@
+INCLUDE:
+  - conf/dev/business/common.yaml
+  - conf/dev/global/based_stream.yaml
+  - conf/dev/global/config.yaml
+  - conf/dev/detection/labels/helmet_labels.yaml
+stream:
+  output_dir: output/business/helmet  # 输出目录
+helmet:
+  valid_count: 10
+  lost_frames: 60
