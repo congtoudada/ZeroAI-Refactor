@@ -1,4 +1,4 @@
-FROM nvcr.io/nvidia/tensorrt:22.12-py3
+FROM nvcr.io/nvidia/tensorrt:23.08-py3
 
 ENV DEBIAN_FRONTEND=noninteractive
 ARG USERNAME=user
