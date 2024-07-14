@@ -27,7 +27,7 @@ class LaunchComponent(Component):
         self.config: LaunchInfo = LaunchInfo(ConfigKit.load(application_path))
         self.pname = f"[ {os.getpid()}:main ]"  # 重写父类pname
         self.esc_event = None  # 退出事件
-        self.launch_timer = TimerKit()  # 性能分析器
+        self.launch_timer = TimerKit(max_flag=0)  # 性能分析器
         self.analysis_flag = 0  # 打印性能分析报告标志
 
     def on_start(self):

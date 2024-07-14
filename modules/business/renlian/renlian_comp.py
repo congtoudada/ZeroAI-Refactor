@@ -8,7 +8,6 @@ from loguru import logger
 from business.count.count_comp import CountComponent
 from business.renlian.renlian_info import RenlianInfo
 from business.renlian.renlian_item import RenlianItem
-from bytetrack.zero.component.bytetrack_helper import BytetrackHelper
 from insight.zero.component.face_helper import FaceHelper
 from simple_http.simple_http_helper import SimpleHttpHelper
 from zero.core.key.global_key import GlobalKey

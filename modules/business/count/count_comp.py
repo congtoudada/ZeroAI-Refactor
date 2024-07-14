@@ -291,13 +291,17 @@ class CountComponent(BasedStreamComponent):
                     ltrb = obj[:4]
                     obj_id = int(obj[6])
                     cv2.rectangle(frame, pt1=(int(ltrb[0]), int(ltrb[1])), pt2=(int(ltrb[2]), int(ltrb[3])),
-                                  color=(0, 0, 255), thickness=line_thickness)
+                                  color=self._get_color(obj_id), thickness=line_thickness)
                     cv2.putText(frame, f"{obj_id}",
                                 (int(ltrb[0]), int(ltrb[1])),
                                 cv2.FONT_HERSHEY_PLAIN, 1, (0, 0, 255), thickness=text_thickness)
-
         # 可视化并返回
         return frame
+
+    def _get_color(self, idx):
+        idx = (1 + idx) * 3
+        color = ((37 * idx) % 255, (17 * idx) % 255, (29 * idx) % 255)
+        return color
 
     def _get_base(self, base, ltrb):
         """

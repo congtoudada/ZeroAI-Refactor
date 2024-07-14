@@ -4,7 +4,7 @@ import time
 
 class TimerKit(object):
     """A simple timer."""
-    def __init__(self):
+    def __init__(self, max_flag=10):
         self.total_time = 0.
         self.calls = 0
         self.start_time = 0.
@@ -12,7 +12,7 @@ class TimerKit(object):
         self.average_time = 0.  # 平均耗时
         self.max_time = 0.  # 峰值耗时
         self.duration = 0.
-        self.MAX_FLAG = 10  # 前10次不记录
+        self.MAX_FLAG = max_flag  # 前10次不记录
 
     def tic(self):
         # using time.time instead of time.clock because time time.clock

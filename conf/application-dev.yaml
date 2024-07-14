@@ -12,6 +12,8 @@ service_list:
 stream_list:
   - path: modules/zero/core/component/stream_comp.py
     conf: conf/dev/stream/stream1.yaml
+  - path: modules/zero/core/component/stream_comp.py
+    conf: conf/dev/stream/stream2.yaml
 
 # 算法
 algorithm_list:
