@@ -2,7 +2,7 @@ FROM nvcr.io/nvidia/tensorrt:22.12-py3
 
 ENV DEBIAN_FRONTEND=noninteractive
 ARG USERNAME=user
-ARG WORKDIR=/workspace/ZeroAI
+ARG WORKDIR=/workspace/ZeroAI-Refactor
 
 RUN apt-get update && apt-get install -y \
         automake autoconf libpng-dev nano python3-pip \
@@ -22,9 +22,9 @@ RUN apt-get update && apt-get install -y \
 RUN pip3 config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
 RUN pip3 install torch==1.12.1+cu113 torchvision==0.13.1+cu113 torchaudio==0.12.1 --extra-index-url https://download.pytorch.org/whl/cu113
 
-RUN git clone https://github.com/congtoudada/ZeroAI.git \
-    && cd ZeroAI \
-    && git checkout b0c2bee215effebd310ee325c4e2bfceb82313f8 \
+RUN git clone https://github.com/congtoudada/ZeroAI-Refactor.git \
+    && cd ZeroAI-Refactor \
+    && git checkout 0fc3278575c7e3f5e26ac5948b79223b0ecfe82c \
     && pip3 install pip --upgrade \
     && pip3 install -r requirements.txt \
     && python3 installer.py \
