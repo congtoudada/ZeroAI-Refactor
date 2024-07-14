@@ -45,12 +45,15 @@ class SimpleHttpComponent(Component):
             content = req_package[SimpleHttpKey.HTTP_PACKAGE_JSON.name]
             full_url = self._get_full_url(uri)
             response = None
-            if method == 1:  # GET
-                logger.info(f"{self.pname} 发送Get请求，路径: {full_url}")
-                response = requests.get(self._get_full_url(uri))
-            elif method == 2:
-                logger.info(f"{self.pname} 发送Post请求，路径: {full_url}")
-                response = requests.post(self._get_full_url(uri), headers=self.headers, data=json.dumps(content))
+            try:
+                if method == 1:  # GET
+                    logger.info(f"{self.pname} 发送Get请求，路径: {full_url}")
+                    response = requests.get(self._get_full_url(uri))
+                elif method == 2:
+                    logger.info(f"{self.pname} 发送Post请求，路径: {full_url}")
+                    response = requests.post(self._get_full_url(uri), headers=self.headers, data=json.dumps(content))
+            except Exception as e:
+                logger.error(f"{self.pname} {e}")
             if response is not None:
                 if response.status_code == 200:
                     logger.info(f"{self.pname} 成功收到后端响应，路径: {full_url}")

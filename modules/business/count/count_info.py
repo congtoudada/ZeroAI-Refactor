@@ -10,5 +10,5 @@ class CountInfo(BasedStreamInfo):
         self.count_valid_frames = 5  # 对象稳定出现多少帧，才开始计算
         self.count_red = []  # 点集1
         self.count_green = []  # 点集2
-        self.count_mot_config = ""  # mot配置路径
+        self.stream_mot_config = ""  # mot配置路径
         super().__init__(data)  # 前面是声明，一定要最后调用这段赋值

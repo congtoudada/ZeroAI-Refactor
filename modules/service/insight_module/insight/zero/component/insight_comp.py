@@ -80,7 +80,7 @@ class InsightComponent(Component):
             # break  # 每次最多处理一个响应
         # 记录推理平均耗时
         if self.config.log_analysis:
-            AnalysisHelper.refresh("人脸推理", f"{self.infer_timer.average_time * 1000:.3f}ms", "500ms")
+            AnalysisHelper.refresh("人脸推理", f"{self.infer_timer.average_time * 1000:.3f}ms", "33.3ms")
 
         return False
 

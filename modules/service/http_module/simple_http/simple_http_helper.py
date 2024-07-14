@@ -30,3 +30,4 @@ class SimpleHttpHelper:
             logger.error("发送Http请求失败, 没有开启SimpleHttpService!")
             return
         SimpleHttpHelper.shared_memory[SimpleHttpKey.HTTP_REQ.name].put(req_package)
+

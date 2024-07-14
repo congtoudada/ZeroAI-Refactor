@@ -10,6 +10,6 @@ count:
   filter: 0  # 方向过滤 0:不过滤，双向检测 1:过滤进方向 2:过滤出方向
   lost_frames: 60  # 对象消失多少帧则丢弃
   valid_frames: 1 # 对象稳定出现多少帧，才开始计算
-  mot_config: conf/dev/business/mot/mot.yaml  # mot配置
+
 
 

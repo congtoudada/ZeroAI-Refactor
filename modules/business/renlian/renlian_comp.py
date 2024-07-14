@@ -28,7 +28,6 @@ class RenlianComponent(CountComponent):
         self.pname = f"[ {os.getpid()}:renlian for {self.config.input_ports[0]}]"
         self.pool: ObjectPool = ObjectPool(20, RenlianItem)  # 对象池
         self.item_dict: Dict[int, RenlianItem] = {}  # 当前检测对象字典
-        self.tracker: BytetrackHelper = BytetrackHelper(self.config.count_mot_config)  # 追踪器
         self.face_helper: FaceHelper = None
 
     def on_start(self):

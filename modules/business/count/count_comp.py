@@ -38,7 +38,7 @@ class CountComponent(BasedStreamComponent):
         self.red_vecs = []  # 预计算红色向量集合
         self.green_points = []  # 预计算绿色点位置集合
         self.green_vecs = []  # 预计算绿色向量集合
-        self.tracker: BytetrackHelper = BytetrackHelper(self.config.count_mot_config)  # 追踪器
+        self.tracker: BytetrackHelper = BytetrackHelper(self.config.stream_mot_config)  # 追踪器
 
     def on_start(self):
         super().on_start()
@@ -68,8 +68,8 @@ class CountComponent(BasedStreamComponent):
         super().on_update()
         return True
 
-    def on_resolve_stream(self, read_idx):
-        frame, _ = super().on_resolve_stream(read_idx)  # 解析视频帧id+视频帧
+    def on_resolve_per_stream(self, read_idx):
+        frame, _ = super().on_resolve_per_stream(read_idx)  # 解析视频帧id+视频帧
         if frame is None:  # 没有有效帧
             return frame, None
         # 解析额外数据

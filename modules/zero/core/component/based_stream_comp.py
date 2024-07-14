@@ -12,7 +12,6 @@ from zero.core.info.based_stream_info import BasedStreamInfo
 from zero.core.key.global_key import GlobalKey
 from zero.core.key.stream_key import StreamKey
 from zero.utility.rtsp_kit import RtspKit
-from zero.utility.timer_kit import TimerKit
 from abc import ABC, abstractmethod
 
 
@@ -32,8 +31,6 @@ class BasedStreamComponent(Component, ABC):
         self.video_writers: List[SaveVideoHelper] = []  # 存储视频帮助类
         self.rtsp_writers: List[RtspKit] = []  # rtsp推流工具
         self.write_dict = []  # 输出字典
-        self.process_timer = TimerKit()  # 计算处理时间
-        # self._tic = False
 
     def on_start(self):
         super().on_start()
@@ -83,7 +80,7 @@ class BasedStreamComponent(Component, ABC):
     def on_update(self) -> bool:
         # 处理每一个输入端口
         for i, input_port in enumerate(self.config.input_ports):
-            frame, user_data = self.on_resolve_stream(i)  # 解析流
+            frame, user_data = self.on_resolve_per_stream(i)  # 解析流
             self.frames[i] = frame
             if frame is not None and self.config.log_analysis:  # 记录算法耗时
                 self.update_timer.tic()
@@ -115,7 +112,7 @@ class BasedStreamComponent(Component, ABC):
             self.shared_memory[GlobalKey.EVENT_ESC].set()  # 退出程序
         return True
 
-    def on_resolve_stream(self, read_idx):
+    def on_resolve_per_stream(self, read_idx):
         """
         根据下标解析视频流数据包（默认只解析帧id和视频帧，如果有额外数据需用户额外处理）
         :param read_idx: 端口索引
