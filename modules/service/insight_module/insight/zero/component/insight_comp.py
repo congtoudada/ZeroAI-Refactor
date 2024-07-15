@@ -86,6 +86,7 @@ class InsightComponent(Component):
         return False
 
     def on_destroy(self):
+        self.face_shared_memory.unlink()
         self.face_model.save()  # 保存数据库
 
 

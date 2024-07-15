@@ -99,6 +99,9 @@ class StreamComponent(Component):
         # 填充输出
         self.stream_shared_memory[self.config.output_port] = stream_package
 
+    def on_destroy(self):
+        self.stream_shared_memory.unlink()
+        super().on_destroy()
 
 def create_process(shared_memory, config_path: str):
     # 创建视频流组件

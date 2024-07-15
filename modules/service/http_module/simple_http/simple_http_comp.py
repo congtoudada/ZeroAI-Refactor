@@ -65,6 +65,9 @@ class SimpleHttpComponent(Component):
     def _get_full_url(self, uri: str) -> str:
         return f"http://{self.config.web_address}/algorithm/{uri}"
 
+    def on_destroy(self):
+        self.http_shared_memory.unlink()
+        super().on_destroy()
 
 def create_process(shared_memory, config_path: str):
     comp = SimpleHttpComponent(shared_memory, config_path)

@@ -35,6 +35,6 @@ algorithm_list:
 app:
   running_file: bin/dev/runtime.pkl  # 框架运行时标识路径，运行时生成，删除该文件可以关闭算法端
   analysis_enable: True  # 是否打印性能分析报告
-  analysis_interval: 5  # 每隔x秒打印一次性能分析报告
+  analysis_interval: 10  # 每隔x秒打印一次性能分析报告
 
 update_fps: 1  # 主进程更新帧率

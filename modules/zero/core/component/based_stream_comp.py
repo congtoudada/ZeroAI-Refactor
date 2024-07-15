@@ -4,7 +4,6 @@ import cv2
 from UltraDict import UltraDict
 from loguru import logger
 
-
 from zero.core.component.component import Component
 from zero.core.helper.analysis_helper import AnalysisHelper
 from zero.core.helper.save_video_helper import SaveVideoHelper
@@ -19,6 +18,7 @@ class BasedStreamComponent(Component, ABC):
     """
     基于视频流的算法组件
     """
+
     def __init__(self, shared_memory):
         super().__init__(shared_memory)
         self.config: BasedStreamInfo = None
@@ -85,9 +85,10 @@ class BasedStreamComponent(Component, ABC):
             if frame is not None and self.config.log_analysis:  # 记录算法耗时
                 self.update_timer.tic()
             process_data = self.on_process_per_stream(i, frame, user_data)  # 处理流
-            if self.config.stream_draw_vis_enable and frame is not None:
+            if ((self.config.stream_draw_vis_enable or self.config.stream_save_video_enable or self.config.stream_rtsp_enable)
+                    and frame is not None):
                 frame = self.on_draw_vis(i, frame, process_data)  # 在多输入端口时，通常只有一个端口返回frame
-                if frame is not None:
+                if frame is not None and self.config.stream_draw_vis_enable:
                     if self.config.stream_draw_vis_resize:
                         # resize会涉及图像拷贝
                         cv2.imshow(self.window_name[i],
@@ -154,6 +155,8 @@ class BasedStreamComponent(Component, ABC):
         return frame
 
     def on_destroy(self):
+        for i in range(len(self.write_dict)):
+            self.write_dict[i].unlink()
         for vid in self.video_writers:
             vid.on_destroy()
         super().on_destroy()
