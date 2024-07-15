@@ -95,7 +95,7 @@ class LaunchComponent(Component):
 
     def on_update(self) -> bool:
         self.analysis_flag += 1
-        if self.analysis_flag >= self.config.app_analysis_interval:  # 打印分析报告
+        if self.config.app_analysis_enable and self.analysis_flag >= self.config.app_analysis_interval:  # 打印分析报告
             self.analysis_flag = 0
             if not self.esc_event.is_set():
                 AnalysisHelper.show()

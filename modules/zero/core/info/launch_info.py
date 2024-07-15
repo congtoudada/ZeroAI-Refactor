@@ -9,6 +9,7 @@ class LaunchInfo(BaseInfo):
         self.algorithm_list = []  # 算法列表，会根据顺序依次启动算法 per element: { py: python脚本路径 conf: 算法配置文件路径 }
         self.service_list = []  # 服务列表，会根据顺序依次启动服务 per element: { py: python脚本路径 conf: 服务配置文件路径 }
         self.app_running_file = ""  # 框架运行时标识路径，运行时生成，删除该文件可以关闭算法端
+        self.app_analysis_enable = True  # 是否打印性能分析报告
         self.app_analysis_interval = 10  # 每隔x秒打印一次性能分析报告
         # ---------------------------------- End ----------------------------------
         super().__init__(data)
