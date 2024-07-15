@@ -2,9 +2,6 @@
 # Copyright (c) Megvii, Inc. and its affiliates. All Rights Reserved
 import setuptools
 
-#     install_requires=[
-#         'yolox'
-#     ],
 setuptools.setup(
     name="bytetrack",
     version="0.1.0",
