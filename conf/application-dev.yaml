@@ -5,8 +5,8 @@ INCLUDE:
 service_list:
   - path: modules/service/http_module/simple_http/simple_http_comp.py  # HTTP服务
     conf: conf/dev/service/http/http.yaml
-#  - path: modules/service/insight_module/insight/zero/component/insight_comp.py  # 人脸识别服务
-#    conf: conf/dev/service/face/insight/insight.yaml
+  - path: modules/service/insight_module/insight/zero/component/insight_comp.py  # 人脸识别服务
+    conf: conf/dev/service/face/insight/insight.yaml
 
 # 视频流
 stream_list:

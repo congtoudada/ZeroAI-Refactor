@@ -1,9 +1,9 @@
-# count_face
+# Last Update: 2024-07-15-13:31:20
+# yolox + bytetrack
 numpy==1.23.2
-torch>=1.7
+torch>=1.8
 opencv-python
 loguru
-scikit-image
 tqdm
 torchvision>=0.10.0
 Pillow==9.2.0
@@ -15,22 +15,19 @@ lap
 motmetrics
 filterpy
 h5py
-# demo
 PyYaml
-
-# verified versions
-onnx==1.10.0
-onnxruntime==1.10.0
-onnx-simplifier==0.4.1
+onnx
+onnxruntime
+onnx-simplifier
 
 # face recognition
 matplotlib
 easydict
 opencv-contrib-python
 pandas
-scikit-image
 scikit-learn
-scipy
+scikit-image
+scipy==1.10.1
 seaborn
 xmltodict
 basetrainer
@@ -51,3 +48,6 @@ ultradict
 atomics
 setuptools
 requests
+
+# for docker env
+# markdown-it-py==2.2.0

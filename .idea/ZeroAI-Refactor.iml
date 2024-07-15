@@ -8,7 +8,7 @@
       <sourceFolder url="file://$MODULE_DIR$/modules/algorithm/yolox_module" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/modules/service/insight_module" isTestSource="false" />
     </content>
-    <orderEntry type="jdk" jdkName="Python 3.9 (zeroai2)" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="Python 3.8 (zeroai3)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
 </module>
