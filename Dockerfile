@@ -25,7 +25,7 @@ RUN pip3 install torch==1.12.1+cu113 torchvision==0.13.1+cu113 torchaudio==0.12.
 
 RUN git clone https://github.com/congtoudada/ZeroAI-Refactor.git \
     && cd ZeroAI-Refactor \
-    && git checkout f5c4788431a40cb105196e11d0c82a2cfe34d89f \
+    && git checkout 68e484bc30053d4334a0f62d2971586695ce24b1 \
     && pip3 install pip --upgrade \
     && pip3 install -r requirements.txt
 
