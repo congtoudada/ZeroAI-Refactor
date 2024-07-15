@@ -29,8 +29,7 @@ RUN git clone https://github.com/congtoudada/ZeroAI-Refactor.git \
 
 RUN cd ZeroAI-Refactor \
     && python3 installer.py \
-    && ldconfig \
-    && pip cache purge
+    && ldconfig
 
 RUN git clone https://github.com/NVIDIA-AI-IOT/torch2trt.git \
     && cd torch2trt \
