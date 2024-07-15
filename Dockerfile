@@ -23,7 +23,7 @@ RUN pip3 config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
 
 RUN git clone https://github.com/congtoudada/ZeroAI-Refactor.git \
     && cd ZeroAI-Refactor \
-    && git checkout d9242480b508192982bae03d1c7bd69b80364e08 \
+    && git checkout 9c8934a872a07dd11d70c0ffeac45c7262c4ed8e \
     && pip3 install pip --upgrade \
     && pip3 install -r requirements.txt \
     && python3 installer.py \
