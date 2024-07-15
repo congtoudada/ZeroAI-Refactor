@@ -1,4 +1,4 @@
-FROM nvcr.io/nvidia/pytorch:22.12-py3
+FROM nvcr.io/nvidia/tensorrt:22.12-py3
 
 ENV DEBIAN_FRONTEND=noninteractive
 ARG USERNAME=user
@@ -21,6 +21,8 @@ RUN apt-get update && apt-get install -y \
 
 RUN pip3 config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
 
+RUN pip3 install torch==1.12.1+cu113 torchvision==0.13.1+cu113 torchaudio==0.12.1 --extra-index-url https://download.pytorch.org/whl/cu113
+
 RUN git clone https://github.com/congtoudada/ZeroAI-Refactor.git \
     && cd ZeroAI-Refactor \
     && git checkout f5c4788431a40cb105196e11d0c82a2cfe34d89f \
@@ -29,7 +31,8 @@ RUN git clone https://github.com/congtoudada/ZeroAI-Refactor.git \
 
 RUN cd ZeroAI-Refactor \
     && python3 installer.py \
-    && ldconfig
+    && ldconfig \
+    && pip cache purge
 
 RUN git clone https://github.com/NVIDIA-AI-IOT/torch2trt.git \
     && cd torch2trt \
