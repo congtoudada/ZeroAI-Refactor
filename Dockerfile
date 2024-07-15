@@ -27,7 +27,8 @@ RUN git clone https://github.com/congtoudada/ZeroAI-Refactor.git \
     && pip3 install pip --upgrade \
     && pip3 install -r requirements.txt
 
-RUN python3 installer.py \
+RUN cd ZeroAI-Refactor \
+    && python3 installer.py \
     && ldconfig \
     && pip cache purge
 
