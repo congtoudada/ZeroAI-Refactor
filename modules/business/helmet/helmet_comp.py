@@ -30,6 +30,8 @@ class HelmetComponent(BasedStreamComponent):
         self.config: HelmetInfo = HelmetInfo(ConfigKit.load(config_path))
         self.pname = f"[ {os.getpid()}:helmet for {self.config.input_ports[0]}&{self.config.input_ports[1]} ]"
         self.cam_id = 0
+        self.stream_width = 0
+        self.stream_height = 0
         # key: obj_id value: cls
         self.pool: ObjectPool = ObjectPool(20, HelmetItem)
         self.record_pool: ObjectPool = ObjectPool(20, DetectionRecord)
@@ -41,6 +43,8 @@ class HelmetComponent(BasedStreamComponent):
     def on_start(self):
         super().on_start()
         self.cam_id = self.read_dict[0][StreamKey.STREAM_CAM_ID.name]
+        self.stream_width = self.read_dict[0][StreamKey.STREAM_WIDTH.name]
+        self.stream_height = self.read_dict[0][StreamKey.STREAM_HEIGHT.name]
 
     def on_update(self) -> bool:
         self.release_unused()  # 清理无用资源（一定要在最前面调用）
@@ -96,6 +100,9 @@ class HelmetComponent(BasedStreamComponent):
         # 遍历每个人
         for i, obj in enumerate(input_mot):
             ltrb = obj[:4]
+            # 只有在检测区域内才匹配
+            if not self._is_in_zone(ltrb, self.config.helmet_zone):
+                continue
             # 包围盒匹配（满足就返回）
             match_idx = MatchRecordHelper.match_bbox(ltrb, self.helmet_records)
             # 距离匹配（锁定上半身）
@@ -151,6 +158,12 @@ class HelmetComponent(BasedStreamComponent):
                     (1. / max(1e-5, self.update_timer.average_time),
                      num), (0, int(15 * text_scale)),
                     cv2.FONT_HERSHEY_PLAIN, text_scale, (0, 0, 255), thickness=text_thickness)
+        # 安全帽区域
+        if len(self.config.helmet_zone) > 0:
+            helmet_zone = self.config.helmet_zone
+            cv2.rectangle(frame, pt1=(int(helmet_zone[0] * self.stream_width), int(helmet_zone[1] * self.stream_height)),
+                          pt2=(int(helmet_zone[2] * self.stream_width), int(helmet_zone[3] * self.stream_height)),
+                          color=(0, 255, 0), thickness=line_thickness)
         # 对象基准点、包围盒
         if len(self.config.detection_labels) == 0:
             logger.warning(f"{self.pname} detection_labels的长度为0，请在配置文件中配置detection_labels!")
@@ -159,6 +172,9 @@ class HelmetComponent(BasedStreamComponent):
             for obj in input_mot:
                 ltrb = obj[:4]
                 obj_id = int(obj[6])
+                # screen_x = int((ltrb[0] + ltrb[2]) / 2)
+                # screen_y = int((ltrb[1] + ltrb[3]) / 2)
+                cv2.circle(frame, (int(ltrb[0]), int(ltrb[1])), 4, (118, 154, 242), line_thickness)
                 cv2.rectangle(frame, pt1=(int(ltrb[0]), int(ltrb[1])), pt2=(int(ltrb[2]), int(ltrb[3])),
                               color=self._get_color(obj_id), thickness=line_thickness)
                 if self.data_dict.__contains__(obj_id):
@@ -187,6 +203,18 @@ class HelmetComponent(BasedStreamComponent):
         idx = (1 + idx) * 3
         color = ((37 * idx) % 255, (17 * idx) % 255, (29 * idx) % 255)
         return color
+
+    def _is_in_zone(self, person_ltrb, helmet_ltrb):
+        if len(helmet_ltrb) == 0:
+            return True
+        # base_x = ((person_ltrb[0] + person_ltrb[2]) / 2) / self.stream_width
+        # base_y = ((person_ltrb[1] + person_ltrb[3]) / 2) / self.stream_height
+        base_x = person_ltrb[0] / self.stream_width
+        base_y = person_ltrb[1] / self.stream_height
+        if helmet_ltrb[0] < base_x < helmet_ltrb[2] and helmet_ltrb[1] < base_y < helmet_ltrb[3]:
+            return True
+        else:
+            return False
 
 
 def create_process(shared_memory, config_path: str):
