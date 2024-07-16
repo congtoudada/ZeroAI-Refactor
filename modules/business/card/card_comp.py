@@ -6,7 +6,6 @@ from business.card.card_info import CardInfo
 from zero.core.component.based_stream_comp import BasedStreamComponent
 from zero.utility.config_kit import ConfigKit
 from loguru import logger
-
 from zero.utility.object_pool import ObjectPool
 from zero.utility.timer_kit import TimerKit
 

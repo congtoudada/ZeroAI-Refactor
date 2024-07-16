@@ -99,11 +99,12 @@ class LaunchComponent(Component):
             self.analysis_flag = 0
             if not self.esc_event.is_set():
                 AnalysisHelper.show()
-        if not os.path.exists(self.config.app_running_file):  # 检测系统运行
+        if not os.path.exists(self.config.app_running_file):  # 当运行文件删除时程序退出
             self.esc_event.set()
         return False
 
     def on_destroy(self):
+        self.shared_memory[GlobalKey.ALL_READY.name] = True
         logger.info("程序将在3s后退出！")
         for i in [3, 2, 1]:
             logger.info(f"倒计时: {i}")
@@ -113,5 +114,7 @@ class LaunchComponent(Component):
         sys.exit(0)
 
     def handle_termination(self, signal_num, frame):
-        print(f'接收到信号 {signal_num}, 开始清理并退出...')
+        logger.info(f'{self.pname} 接收到信号 {signal_num}, 开始清理并退出...')
         self.esc_event.set()
+
+

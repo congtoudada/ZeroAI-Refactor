@@ -1,4 +1,5 @@
 import os
+import signal
 import time
 from abc import ABC
 from loguru import logger
@@ -100,33 +101,24 @@ class Component(ABC):
             child.on_start()
 
     def update(self):
+        # 收到退出信号
+        if self.esc_event.is_set():
+            for child in self.children:  # 先销毁子组件
+                child.on_destroy()
+            self.on_destroy()  # 再销毁父组件
+            return
         # 组件更新
         while True:
             if self.enable:
-                # if self.config.log_analysis:  # 记录完整update耗时（记空帧耗时无意义）
-                #     self.update_timer.tic()
                 self.on_update()  # 先执行父组件的更新
                 if self.has_child:  # 多一层判断（更省性能？）
                     for child in self.children:  # 再执行子组件更新
                         if child.enable:
                             child.on_update()
-                # if self.config.log_analysis:
-                #     self.update_timer.toc()
             if self.esc_event.is_set():
                 for child in self.children:  # 先销毁子组件
-                    child.pause()
                     child.on_destroy()
-                self.pause()
                 self.on_destroy()  # 再销毁父组件
                 return
             if self.enable_sleep:
-                try:
-                    time.sleep(self._update_fps)
-                except KeyboardInterrupt:
-                    # 当用户按下Ctrl+C时，会进入这个except块
-                    # 在这里，你可以执行一些清理工作，比如关闭文件、释放资源等
-                    # 然后程序正常结束
-                    self.pause()
-                    self.on_destroy()
-
-
+                time.sleep(self._update_fps)

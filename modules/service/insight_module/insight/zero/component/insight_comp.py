@@ -82,19 +82,25 @@ class InsightComponent(Component):
         # 记录推理平均耗时
         if self.config.log_analysis:
             AnalysisHelper.refresh("Face inference average time", f"{self.infer_timer.average_time * 1000:.3f}ms", "33.3ms")
-
         return False
 
     def on_destroy(self):
         self.face_shared_memory.unlink()
         self.face_model.save()  # 保存数据库
+        super().on_destroy()
 
 
 def create_process(shared_memory, config_path: str):
     comp = InsightComponent(shared_memory, config_path)
-    comp.start()
-    shared_memory[GlobalKey.LAUNCH_COUNTER.name] += 1
-    comp.update()
+    try:
+        comp.start()
+        shared_memory[GlobalKey.LAUNCH_COUNTER.name] += 1
+        comp.update()
+    except KeyboardInterrupt:
+        comp.on_destroy()
+    except Exception as e:
+        logger.error(f"InsightComponent: {e}")
+        comp.on_destroy()
 
 
 if __name__ == '__main__':

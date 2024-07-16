@@ -103,12 +103,19 @@ class StreamComponent(Component):
         self.stream_shared_memory.unlink()
         super().on_destroy()
 
+
 def create_process(shared_memory, config_path: str):
     # 创建视频流组件
     comp: StreamComponent = StreamComponent(shared_memory, config_path)
-    comp.start()  # 初始化
-    # shared_memory[GlobalKey.LAUNCH_COUNTER.name] = shared_memory[GlobalKey.LAUNCH_COUNTER.name] + 1
-    comp.update()  # 算法逻辑循环
+    try:
+        comp.start()  # 初始化
+        # shared_memory[GlobalKey.LAUNCH_COUNTER.name] += 1  # 视频流在内部递增
+        comp.update()  # 算法逻辑循环
+    except KeyboardInterrupt:
+        comp.on_destroy()
+    except Exception as e:
+        logger.error(f"StreamComponent: {e}")
+        comp.on_destroy()
 
 
 if __name__ == '__main__':

@@ -59,7 +59,6 @@ class SimpleHttpComponent(Component):
                     logger.info(f"{self.pname} 成功收到后端响应，路径: {full_url}")
                 else:
                     logger.error(f"{self.pname} 请求失败[{response.status_code}]，没有收到后端响应，路径: {full_url}")
-
         return False
 
     def _get_full_url(self, uri: str) -> str:
@@ -69,11 +68,18 @@ class SimpleHttpComponent(Component):
         self.http_shared_memory.unlink()
         super().on_destroy()
 
+
 def create_process(shared_memory, config_path: str):
     comp = SimpleHttpComponent(shared_memory, config_path)
-    comp.start()
-    shared_memory[GlobalKey.LAUNCH_COUNTER.name] += 1
-    comp.update()
+    try:
+        comp.start()
+        shared_memory[GlobalKey.LAUNCH_COUNTER.name] += 1
+        comp.update()
+    except KeyboardInterrupt:
+        comp.on_destroy()
+    except Exception as e:
+        logger.error(f"SimpleHttpComponent: {e}")
+        comp.on_destroy()
 
 
 if __name__ == '__main__':
