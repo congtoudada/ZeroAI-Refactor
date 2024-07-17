@@ -43,8 +43,8 @@ class LaunchComponent(Component):
         # 初始化退出信号事件
         self.esc_event = multiprocessing.Manager().Event()
         # 注册终止信号 Ctrl+C可以触发
-        signal.signal(signal.SIGINT, self.handle_termination)
-        signal.signal(signal.SIGTERM, self.handle_termination)
+        # signal.signal(signal.SIGINT, self.handle_termination)
+        # signal.signal(signal.SIGTERM, self.handle_termination)
 
         # self.shared_memory: dict = multiprocessing.Manager().dict()
         self.shared_memory = UltraDict(name="global", shared_lock=self.config.lock_mode)
@@ -113,8 +113,8 @@ class LaunchComponent(Component):
         logger.info("程序终止！")
         sys.exit(0)
 
-    def handle_termination(self, signal_num, frame):
-        logger.info(f'{self.pname} 接收到信号 {signal_num}, 开始清理并退出...')
-        self.esc_event.set()
+    # def handle_termination(self, signal_num, frame):
+    #     logger.info(f'{self.pname} 接收到信号 {signal_num}, 开始清理并退出...')
+    #     self.esc_event.set()
 
 

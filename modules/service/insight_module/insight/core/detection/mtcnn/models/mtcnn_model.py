@@ -289,7 +289,7 @@ class MTCNN():
         input_tensor = torch.FloatTensor(input_tensor).to(self.device)
         output = self.onet(input_tensor)
         landmarks = output[0].cpu().data.numpy()  # shape [n_boxes, 10]
-        # compute landmark points in src face
+        # compute landmark points in output face
         landmarks[:, 0:5] = np.expand_dims(xmin, 1) + np.expand_dims(width, 1) * landmarks[:, 0:5]
         landmarks[:, 5:10] = np.expand_dims(ymin, 1) + np.expand_dims(height, 1) * landmarks[:, 5:10]
         # adapter landmarks

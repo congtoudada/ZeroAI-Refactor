@@ -13,6 +13,14 @@ if __name__ == '__main__':
     # 解析args
     args = make_parser().parse_args()
     comp = LaunchComponent(args.application)
-    comp.start()
-    comp.update()
+    try:
+        comp.start()
+        comp.update()
+    except KeyboardInterrupt:
+        comp.esc_event.set()
+        comp.on_destroy()
+    except Exception as e:
+        print("An error occurred: {}".format(e))
+        exit(1)
+    exit(0)
 

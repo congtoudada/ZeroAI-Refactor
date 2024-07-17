@@ -7,18 +7,24 @@ import signal
 import cv2
 import numpy as np
 
-from zero import ConfigKit
-from zero import YamlKit
+from scripts.config_kit import ConfigKit
+from scripts.yaml_kit import YamlKit
 
 # 用户设置变量
-cap = cv2.VideoCapture("res/videos/renlian/renlian1.mp4")  # 打开本地视频
-expect_preview = (1280, 720)  # 期望分辨率
+# 图片设置
+img_path = "scripts/resources/drawline_test.jpg"  # 打开本地图片
+# 视频设置
+vid_path = "res/videos/renlian/renlian1.mp4"  # 打开视频路径
 frame_index = 50  # 替换为你想要读取的帧索引
-input_file = "conf/algorithm/business/count/count_renlian.yaml"  # 与output不一致，每次可以在结果集基础上预览
-output_file = "script/output/count/drawn_points.yaml"  # 输出路径
+# 通用配置
+run_mode = 0  # 0 代表使用本地图片 1 代表使用本地视频
+expect_preview = (1280, 720)  # 期望分辨率
+input_file = "scripts/output/draw_line.yaml"  # 预览路径，每次会可视化该路径的结果，方便对比
+output_file = "scripts/output/draw_line.yaml"  # 输出路径（根据需求可以设置得和预览路径一样或不同）
 auto_save = True
 mode_str = ['red', 'green']
-mode_idx = 1  # 0:red 1:green
+mode_idx = 0  # 0:red 1:green
+dead_zone = 20  # 死区像素（踩到死区的点会自动吸附到边缘）
 
 # 预定义变量，用于保存上一次点击的位置和所有绘制的点的位置
 prev_point = None
@@ -137,9 +143,12 @@ def save_points():
     global drawn_points
     # 将绘制的点位置写入文本文件
     result = []
+    if len(drawn_points) == 0:
+        print("No Points need save!")
+        return
     for point in drawn_points:
         result.append(f"{1.0 * point[0]/expect_preview[0]:.3f},{1.0 * point[1]/expect_preview[1]:.3f}")
-    YamlKit.write_yaml(output_file, {
+        YamlKit.write_yaml(output_file, {
         'count': {mode_str[mode_idx]: result}
     })
     print(f"Drawn points saved to {output_file}")
@@ -151,24 +160,22 @@ def handle_termination(signal_num, frame):
         save_points()
 
 
-# 检查视频是否成功打开
-if not cap.isOpened():
-    print("Error: Failed to open videos.")
-    exit()
-
 # 获取视频帧数
-total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-
-# 读取指定帧
-cap.set(cv2.CAP_PROP_POS_FRAMES, frame_index)
-ret, frame = cap.read()
+cap = None
+if run_mode == 0:
+    frame = cv2.imread(img_path)
+else:
+    cap = cv2.VideoCapture(vid_path)  # 打开本地视频
+    # 检查视频是否成功打开
+    if not cap.isOpened():
+        print("Error: Failed to open videos.")
+        exit(1)
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    # 读取指定帧
+    cap.set(cv2.CAP_PROP_POS_FRAMES, frame_index)
+    ret, frame = cap.read()
 frame = cv2.resize(frame, expect_preview, interpolation=cv2.INTER_LINEAR)
 
-if not ret:
-    print(f"Error: Failed to read frame {frame_index}.")
-    exit()
-
-dead_zone = 20
 frame = cv2.rectangle(frame, (dead_zone, dead_zone), (frame.shape[1] - dead_zone, frame.shape[0] - dead_zone),
                       (0, 0, 187), 2)
 pre_process(frame, input_file)
@@ -195,4 +202,5 @@ while True:
 cv2.destroyAllWindows()
 
 # 释放视频对象
-cap.release()
+if cap is not None:
+    cap.release()
