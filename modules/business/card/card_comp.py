@@ -1,9 +1,16 @@
+import time
 import cv2
 from typing import Dict
 import numpy as np
 
 from business.card.card_info import CardInfo
+from business.card.card_item import CardItem
+from bytetrack.zero.component.bytetrack_helper import BytetrackHelper
 from zero.core.component.based_stream_comp import BasedStreamComponent
+from zero.core.helper.warn_helper import WarnHelper
+from zero.core.key.detection_key import DetectionKey
+from zero.core.key.global_key import GlobalKey
+from zero.core.key.stream_key import StreamKey
 from zero.utility.config_kit import ConfigKit
 from loguru import logger
 from zero.utility.object_pool import ObjectPool
@@ -11,9 +18,12 @@ from zero.utility.timer_kit import TimerKit
 
 
 class CardComponent(BasedStreamComponent):
-    def __init__(self, shared_data, config_path: str):
-        super().__init__(shared_data)
+    def __init__(self, shared_memory, config_path: str):
+        super().__init__(shared_memory)
         self.config: CardInfo = CardInfo(ConfigKit.load(config_path))
+        self.cam_id = 0
+        self.stream_width = 0
+        self.stream_height = 0
         # 定义变量
         self.pool: ObjectPool = ObjectPool(20, CardItem)
         self.item_dict: Dict[int, CardItem] = {}  # 空字典，用于存储对象的 ID 和对应的 CardItem
@@ -27,10 +37,15 @@ class CardComponent(BasedStreamComponent):
         self.temp_green_result = []  # 初始化临时存储红色和绿色结果的列表
         self.timer = TimerKit()  # 用于计时
         self.valid = False  # False表示没有检测到代刷卡行为
-        self.valid_count = self.config.draw_warning_time
+        self.valid_count = self.config.card_warning_frame
+        self.tracker: BytetrackHelper = BytetrackHelper(self.config.stream_mot_config)  # 追踪器
 
     def on_start(self):
         super().on_start()
+        self.cam_id = self.read_dict[0][StreamKey.STREAM_CAM_ID.name]
+        self.stream_width = int(self.read_dict[0][StreamKey.STREAM_WIDTH.name])
+        self.stream_height = int(self.read_dict[0][StreamKey.STREAM_HEIGHT.name])
+        # 预计算
         self.red_vecs.clear()
         self.green_vecs.clear()  # 清空存储红色和绿色向量的列表
         # 遍历配置中的红色信号点
@@ -53,25 +68,19 @@ class CardComponent(BasedStreamComponent):
                 self.green_vecs.append(green / np.linalg.norm(green))
 
     def on_update(self) -> bool:
-        if super().on_update() and self.input_mot is not None:
-            self.timer.tic()  # 启动计时器，用于计算算法处理时间
-            self.preprocess()  # 调用 preprocess 方法，进行预处理操作
-            self.process_update()  # 调用 process_update 方法，处理多目标追踪结果的更新
-            self.process_result()  # 调用 process_result 方法，处理结果
-            self.timer.toc()  # 结束计时器
+        self.release_unused()  # 清理无用资源（一定要在最前面调用）
+        super().on_update()
         return True
 
-    def preprocess(self):
-        # 清空前一帧状态
-        for item in self.item_dict.values():
-            item.reset_update()
+    def release_unused(self):
         # 清空长期未更新点
         item_clear_keys = []
         card_clear_keys = []
         for key, item in self.item_dict.items():
             #  检查当前帧序号与上次更新帧序号之间的差值是否大于配置中指定的丢失帧数阈值
-            if self.current_frame_id - item.last_update_id > self.config.item_lost_frames:  # card_lost_frames丢失帧数阈值
+            if self.frame_id_cache[0] - item.last_update_id > self.config.card_item_lost_frames:  # card_lost_frames丢失帧数阈值
                 item_clear_keys.append(key)
+        item_clear_keys.reverse()  # 从尾巴往前删除，确保索引正确性
         # 遍历需要清除的键列表
         for key in item_clear_keys:
             self.pool.push(self.item_dict[key])  # 放回对象池
@@ -80,13 +89,38 @@ class CardComponent(BasedStreamComponent):
         # 清除card区长期未更新的值
         for key, value in self.card_dict.items():
             #  检查当前帧序号与上次更新帧序号之间的差值是否大于配置中指定的丢失帧数阈值
-            if self.current_frame_id - value > self.config.card_lost_frames:  # card_lost_frames丢失帧数阈值
+            if self.frame_id_cache[0] - value > self.config.card_lost_frames:  # card_lost_frames丢失帧数阈值
                 card_clear_keys.append(key)
+        card_clear_keys.reverse()  # 从尾巴往前删除，确保索引正确性
         # 遍历需要清除的键列表
         for key in card_clear_keys:
             self.card_dict.pop(key)  # 从字典中移除
 
-    def process_update(self):
+    def on_resolve_per_stream(self, read_idx):
+        frame, _ = super().on_resolve_per_stream(read_idx)  # 解析视频帧id+视频帧
+        if frame is None:  # 没有有效帧
+            return frame, None
+        # 解析额外数据
+        stream_package = self.read_dict[read_idx][self.config.input_ports[read_idx]]
+        input_det = stream_package[DetectionKey.DET_PACKAGE_RESULT.name]  # 目标检测结果
+        return frame, input_det
+
+    def on_process_per_stream(self, idx, frame, input_det):
+        """
+        处理视频流
+        :param idx: 固定为0（只从input_ports[0]取数据）
+        :param frame: 帧
+        :param input_det: 目标检测结果
+        :return:
+        """
+        if input_det is None:
+            return None
+        mot_result = self.tracker.inference(input_det)  # 返回对齐输出后的mot结果
+        # 根据mot结果进行计数
+        self._card_core(frame, mot_result, self.frame_id_cache[0], frame.shape[1], frame.shape[0])
+        return mot_result
+
+    def _card_core(self, frame, input_mot, current_frame_id, width, height):
         """
         同步状态
         # mot output shape: [n, 7]
@@ -101,9 +135,11 @@ class CardComponent(BasedStreamComponent):
         # [6]: id
         :return:
         """
-        if self.input_mot is None:
+        if input_mot is None:
             return
-        for obj in self.input_mot:
+        for item in self.item_dict.values():
+            item.reset_update()
+        for obj in input_mot:
             cls = int(obj[5])  # 提取当前目标的类别，转换为整数类型
             if cls == 0:  # 人
                 ltrb = obj[:4]  # 提取当前目标的边界框坐标，即左上角和右下角的坐标
@@ -114,15 +150,17 @@ class CardComponent(BasedStreamComponent):
                     self.gate_dict[obj_id] = 0  # 加入item_dict时为初始状态0
                     item: CardItem = self.pool.pop()  # 如果当前目标不在 item_dict 中，则从对象池中取出一个对象，这里假设为 CountItem 类型
                     item.init(obj_id,
-                              self.config.item_valid_frames)  # 初始化对象 ，传入目标的唯一标识符和有效帧数,card_valid_frames对象稳定出现多少帧，才开始计算
+                              self.config.card_item_valid_frames)  # 初始化对象 ，传入目标的唯一标识符和有效帧数,card_valid_frames对象稳定出现多少帧，才开始计算
                     self.item_dict[obj_id] = item  # 将初始化后的对象添加到 item_dict 字典中，以目标的唯一标识符为键
                     self.on_create_obj(item)  # 调用 on_create_obj 方法，处理新创建的对象
                 # 2.更新状态
-                x, y = self._get_base(self.config.item_base, ltrb)  # 调用 _get_base 方法获取目标的基准点坐标
+                x, y = self._get_base(self.config.card_item_base, ltrb)  # 调用 _get_base 方法获取目标的基准点坐标
                 # 调用对象的 update 方法，更新目标的状态信息，包括当前帧序号、归一化后的坐标和边界框坐标
-                self.item_dict[obj_id].update(self.current_frame_id, x / self.stream_width, y / self.stream_height, ltrb)
+                self.item_dict[obj_id].update(current_frame_id, x / self.stream_width, y / self.stream_height, ltrb)
+        # 收集结果
+        self._process_result(frame)
 
-    def process_result(self):
+    def _process_result(self, frame):
         """
         处理结果
         :return:
@@ -139,7 +177,7 @@ class CardComponent(BasedStreamComponent):
             if self.is_within_card_area(base):
                 self.card_dict[item.obj_id] = item.last_update_id
             if self.is_through_gate_line(key, base, last_base):
-                self.judge_valid(item.obj_id)
+                self.judge_valid(item.obj_id, frame)
 
     # 判断是否在刷卡区
     def is_within_card_area(self, base):
@@ -162,15 +200,18 @@ class CardComponent(BasedStreamComponent):
             return False
 
     # 对每个通过门的目标进行代刷卡行为的判断
-    def judge_valid(self, key):
+    def judge_valid(self, key, frame):
         valid = key in self.card_dict
         if not valid:
             self.gate_dict[key] = 1
             self.valid = True  # 检测到代刷卡行为
-            self.valid_count = self.config.draw_warning_time
+            self.valid_count = self.config.card_warning_frame
             logger.info(f"{self.pname} {key} 代刷卡行为")  # 控制台打印
-            WarnKit.send_warn_result(self.pname, self.output_dir, self.stream_cam_id, 3, 1, self.frame,
-                                     self.config.stream_export_img_enable, self.config.stream_web_enable)
+            # WarnKit.send_warn_result(self.pname, self.output_dir, self.stream_cam_id, 3, 1, self.frame,
+            #                          self.config.stream_export_img_enable, self.config.stream_web_enable)
+            WarnHelper.send_warn_result(self.pname, self.output_dir[0], self.cam_id, 3, 1,
+                                        frame, self.config.stream_export_img_enable,
+                                        self.config.stream_web_enable)
         else:
             self.gate_dict[key] = 2
             # print(str(key)+"正常通过")   #控制台打印
@@ -193,50 +234,43 @@ class CardComponent(BasedStreamComponent):
             return ltrb[0], ltrb[1]
 
     #  用于在图像上进行可视化操
-    def on_draw_vis(self, frame, vis=False, window_name="", is_copy=True):
-        # 检查是否需要对输入帧进行复制，如果为真，则表示需要在复制的帧上进行可视化操作
-        if is_copy:
-            im = np.ascontiguousarray(np.copy(frame))
-        else:
-            im = frame
-        text_scale = 1
-        text_thickness = 1
+    def on_draw_vis(self, idx, frame, input_mot):
+        text_scale = 2
+        text_thickness = 2
         line_thickness = 2
         # 标题线
-        num = 0 if self.input_mot is None else self.input_mot.shape[0]
+        num = 0 if input_mot is None else input_mot.shape[0]
         # 在图像上添加文本信息，包括帧序号、视频帧率、推理帧率、目标数量以及进入和离开人数等信息
-        cv2.putText(im, 'frame:%d video_fps:%.2f inference_fps:%.2f num:%d' %
-                    (self.current_frame_id,
-                     1. / max(1e-5, self.update_timer.average_time),
-                     1. / max(1e-5, self.timer.average_time),
+        cv2.putText(frame, 'inference_fps:%.2f num:%d' %
+                    (1. / max(1e-5, self.timer.average_time),
                      num), (0, int(15 * text_scale)),
                     cv2.FONT_HERSHEY_PLAIN, text_scale, (0, 0, 255), thickness=text_thickness)
         # 红线
         for i, red_point in enumerate(self.red_points):
             if i == 0:
                 continue
-            cv2.line(im, (int(self.red_points[i][0] * self.stream_width), int(self.red_points[i][1] * self.stream_height)),
+            cv2.line(frame, (int(self.red_points[i][0] * self.stream_width), int(self.red_points[i][1] * self.stream_height)),
                      (int(self.red_points[i-1][0] * self.stream_width), int(self.red_points[i-1][1] * self.stream_height)),
                      (0, 0, 255), line_thickness)  # 绘制线条
         # 绿线
         for i, green_point in enumerate(self.green_points):
             if i == 0:
                 continue
-            cv2.line(im, (int(self.green_points[i][0] * self.stream_width), int(self.green_points[i][1] * self.stream_height)),
+            cv2.line(frame, (int(self.green_points[i][0] * self.stream_width), int(self.green_points[i][1] * self.stream_height)),
                      (int(self.green_points[i-1][0] * self.stream_width), int(self.green_points[i-1][1] * self.stream_height)),
                      (255, 0, 0), line_thickness)  # 绘制线条
         # 对象基准点、红绿信息
         for item in self.item_dict.values():
             screen_x = int(item.base_x * self.stream_width)
             screen_y = int(item.base_y * self.stream_height)
-            cv2.circle(im, (screen_x, screen_y), 4, (118, 154, 242), line_thickness)
-            cv2.putText(im, str(item.red_cur), (screen_x, screen_y), cv2.FONT_HERSHEY_PLAIN, text_scale, (0, 0, 255),
-                        thickness=text_thickness)
-            cv2.putText(im, str(item.green_cur), (screen_x + 10, screen_y), cv2.FONT_HERSHEY_PLAIN, text_scale, (255, 0, 0),
-                        thickness=text_thickness)
+            cv2.circle(frame, (screen_x, screen_y), 4, (118, 154, 242), line_thickness)
+            # cv2.putText(frame, str(item.red_cur), (screen_x, screen_y), cv2.FONT_HERSHEY_PLAIN, text_scale, (0, 0, 255),
+            #             thickness=text_thickness)
+            # cv2.putText(frame, str(item.green_cur), (screen_x + 10, screen_y), cv2.FONT_HERSHEY_PLAIN, text_scale, (255, 0, 0),
+            #             thickness=text_thickness)
         # 对象包围盒
-        if self.input_mot is not None:
-            for obj in self.input_mot:
+        if input_mot is not None:
+            for obj in input_mot:
                 cls = int(obj[5])
                 if cls == 0:
                     ltrb = obj[:4]
@@ -246,15 +280,15 @@ class CardComponent(BasedStreamComponent):
                         text = "normal"
                     elif self.gate_dict[obj_id] == 1:
                         text = "error"
-                    cv2.rectangle(im, pt1=(int(ltrb[0]), int(ltrb[1])), pt2=(int(ltrb[2]), int(ltrb[3])),
+                    cv2.rectangle(frame, pt1=(int(ltrb[0]), int(ltrb[1])), pt2=(int(ltrb[2]), int(ltrb[3])),
                                   color=(0, 0, 255), thickness=1)
-                    cv2.putText(im, f"{obj_id}"+text,
+                    cv2.putText(frame, f"{obj_id}"+text,
                                 (int(ltrb[0]), int(ltrb[1])),
                                 cv2.FONT_HERSHEY_PLAIN, 1, (0, 0, 255), thickness=1)
 
-        self.draw_warning(im)
+        self.draw_warning(frame)
         # 可视化并返回
-        return super().on_draw_vis(im, vis, window_name)
+        return frame
 
     # 绘制警报信息
     def draw_warning(self, frame):
@@ -277,13 +311,18 @@ class CardComponent(BasedStreamComponent):
             # 在帧上绘制文本
             cv2.putText(frame, text, (text_x, text_y), font, font_scale, font_color, line_type)
 
-    # 使用了日志记录器 logger 来记录信息。在这里，它记录了视频帧率和计数计算帧率的信息，包括当前视频帧率以及计数算法处理帧率
-    def on_analysis(self):
-        logger.info(f"{self.pname} video fps: {1. / max(1e-5, self.update_timer.average_time):.2f}"
-                    f" count calculate fps: {1. / max(1e-5, self.timer.average_time):.2f}")
 
-
-def create_process(shared_data, config_path: str):
-    cardComp: CardComponent = CardComponent(shared_data, config_path)  # 创建组件
-    cardComp.start()  # 初始化
-    cardComp.update()  # 算法逻辑循环
+def create_process(shared_memory, config_path: str):
+    comp: CardComponent = CardComponent(shared_memory, config_path)  # 创建组件
+    try:
+        comp.start()  # 初始化
+        # 初始化结束通知
+        shared_memory[GlobalKey.LAUNCH_COUNTER.name] += 1
+        while not shared_memory[GlobalKey.ALL_READY.name]:
+            time.sleep(0.1)
+        comp.update()  # 算法逻辑循环
+    except KeyboardInterrupt:
+        comp.on_destroy()
+    except Exception as e:
+        logger.error(f"CardComponent: {e}")
+        comp.on_destroy()

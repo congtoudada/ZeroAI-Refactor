@@ -123,6 +123,7 @@ class IntrudeComponent(BasedStreamComponent):
         for key, item in self.data_dict.items():
             if self.frame_id_cache[0] - item.last_update_id > self.config.intrude_lost_frame:
                 clear_keys.append(key)
+        clear_keys.reverse()  # 从尾巴往前删除，确保索引正确性
         for key in clear_keys:
             self.pool.push(self.data_dict[key])
             self.data_dict.pop(key)  # 从字典中移除item

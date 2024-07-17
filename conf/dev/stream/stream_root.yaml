@@ -9,3 +9,6 @@ stream:
   read_frequency: 2
   # 画面缩小倍数
   reduce_scale: 1
+
+# 算法update帧率
+update_fps: 30

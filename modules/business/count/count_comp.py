@@ -109,6 +109,9 @@ class CountComponent(BasedStreamComponent):
         """
         if input_mot is None:
             return
+        # 清空前一帧状态
+        for item in self.item_dict.values():
+            item.reset_update()
         # 更新状态
         for obj in input_mot:
             cls = int(obj[5])
@@ -232,14 +235,12 @@ class CountComponent(BasedStreamComponent):
         pass
 
     def release_unused(self):
-        # 清空前一帧状态
-        for item in self.item_dict.values():
-            item.reset_update()
         # 清空长期未更新点
         clear_keys = []
         for key, item in self.item_dict.items():
             if self.frame_id_cache[0] - item.last_update_id > self.config.count_lost_frames:
                 clear_keys.append(key)
+        clear_keys.reverse()  # 从尾巴往前删除，确保索引正确性
         for key in clear_keys:
             self.pool.push(self.item_dict[key])  # 放回对象池
             self.item_dict.pop(key)  # 从字典中移除

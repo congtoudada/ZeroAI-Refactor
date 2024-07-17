@@ -142,6 +142,7 @@ class HelmetComponent(BasedStreamComponent):
         for key, item in self.data_dict.items():
             if self.frame_id_cache[0] - item.last_update_id > self.config.helmet_lost_frame:
                 clear_keys.append(key)
+        clear_keys.reverse()
         for key in clear_keys:
             self.pool.push(self.data_dict[key])
             self.data_dict.pop(key)  # 从字典中移除item
