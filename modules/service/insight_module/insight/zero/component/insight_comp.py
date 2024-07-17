@@ -55,7 +55,7 @@ class InsightComponent(Component):
                 self.database_timer.toc()
                 # 记录构建特征库平均耗时
                 if self.config.log_analysis:
-                    AnalysisHelper.refresh("Face Database Reconstruction", f"{self.database_timer.average_time * 1000:.6f}ms", "无限制")
+                    AnalysisHelper.refresh("Face Database Reconstruction", self.database_timer.average_time * 1000, 9999)
 
         # 处理请求
         while not self.req_queue.empty():
@@ -81,7 +81,7 @@ class InsightComponent(Component):
             # break  # 每次最多处理一个响应
         # 记录推理平均耗时
         if self.config.log_analysis:
-            AnalysisHelper.refresh("Face inference average time", f"{self.infer_timer.average_time * 1000:.3f}ms", "33.3ms")
+            AnalysisHelper.refresh("Face inference average time", self.infer_timer.average_time * 1000)
         return False
 
     def on_destroy(self):

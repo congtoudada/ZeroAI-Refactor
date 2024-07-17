@@ -104,12 +104,8 @@ class BasedStreamComponent(Component, ABC):
                 self.update_timer.toc()
         # 记录性能日志
         if self.config.log_analysis:
-            AnalysisHelper.refresh(f"{self.pname} max time",
-                                   f"{(self.update_timer.max_time * 1000):.3f}ms",
-                                   f"33.3ms")
-            AnalysisHelper.refresh(f"{self.pname} average time",
-                                   f"{(self.update_timer.average_time * 1000):.3f}ms",
-                                   f"33.3ms")
+            AnalysisHelper.refresh(f"{self.pname} max time", self.update_timer.max_time * 1000, 100)
+            AnalysisHelper.refresh(f"{self.pname} average time", self.update_timer.average_time * 1000)
         # opencv等待
         if cv2.waitKey(1) & 0xFF == ord('q'):
             self.shared_memory[GlobalKey.EVENT_ESC.name].set()  # 退出程序

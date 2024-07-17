@@ -15,23 +15,23 @@ class AnalysisHelper:
             AnalysisHelper.global_shared_memory[key] = []
 
     @staticmethod
-    def refresh(key, value, ref):
+    def refresh(key, value: float, ref=33.3):
         """
         刷新性能数据
         :param key:
-        :param value:
-        :param ref: 参考值
+        :param value: 值 ms
+        :param ref: 参考值 ms
         :return:
         """
         AnalysisHelper.register_key(key)
-        AnalysisHelper.global_shared_memory[key] = [key, value, ref]
+        AnalysisHelper.global_shared_memory[key] = [key, f"{value:.3f}ms", f"{ref:.1f}ms", "↑" if value > ref else ""]
 
     @staticmethod
     def show():
         show_data = []
         for key in AnalysisHelper.global_shared_memory.keys():
             show_data.append(AnalysisHelper.global_shared_memory[key])
-        headers = ["键", "值", "参考值"]
+        headers = ["键", "值", "参考值", "指标"]
         table = tabulate(show_data, headers=headers, tablefmt="grid")
         logger.info("\n" + table)
         return table
