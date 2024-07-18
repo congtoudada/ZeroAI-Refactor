@@ -51,8 +51,11 @@ class BasedStreamComponent(Component, ABC):
             # 初始化窗口名
             self.window_name.append(self.pname + ":" + input_port)
             # 初始化输出目录
-            self.output_dir.append(os.path.join(self.config.stream_output_dir,
-                                                f"camera{cam_id}"))
+            if self.config.stream_output_absolute:
+                self.output_dir.append(
+                    os.path.abspath(os.path.join(self.config.stream_output_dir, f"camera{cam_id}")))
+            else:
+                self.output_dir.append(os.path.join(self.config.stream_output_dir, f"camera{cam_id}"))
             os.makedirs(self.output_dir[i], exist_ok=True)
             # 初始化视频存储
             if self.config.stream_save_video_enable:

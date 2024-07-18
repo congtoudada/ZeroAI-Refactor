@@ -6,6 +6,7 @@ class BasedStreamInfo(BaseInfo):
         self.input_ports = []  # 输入端口 (eg. STREAM_PORT1, STREAM_PORT2, ...)
         self.output_ports = []  # 输出端口，如果不为[]需要和输入端口一一对应 (eg. STREAM_PORT1-xxx, STREAM_PORT2-xxx, ...)
         self.stream_output_dir = "output/stream"  # 输出目录
+        self.stream_output_absolute = False  # 是否导出绝对路径
         self.stream_save_video_enable = False  # 是否存储视频
         self.stream_save_video_resize = False  # 是否resize写入视频（需拷贝一次图像）
         self.stream_save_video_width = 640  # 存储视频宽

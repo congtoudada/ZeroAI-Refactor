@@ -1,5 +1,6 @@
 stream:
   output_dir: output/stream  # 输出目录
+  output_absolute: False  # 是否导出绝对路径
   save_video:
     enable: False  # 是否保存视频
     resize: False  # 是否缩放图像存储（会涉及一次图像拷贝）
