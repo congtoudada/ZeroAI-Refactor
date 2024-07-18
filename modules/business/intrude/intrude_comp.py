@@ -1,5 +1,6 @@
 import os
 import time
+import traceback
 from typing import Dict
 import cv2
 import numpy as np
@@ -213,5 +214,7 @@ def create_process(shared_memory, config_path: str):
     except KeyboardInterrupt:
         comp.on_destroy()
     except Exception as e:
-        logger.error(f"IntrudeComponent: {e}")
+        # 使用 traceback 打印堆栈信息
+        traceback_info = ''.join(traceback.format_exception(etype=type(e), value=e, tb=e.__traceback__))
+        logger.error(f"IntrudeComponent: {e}\n{traceback_info}")
         comp.on_destroy()

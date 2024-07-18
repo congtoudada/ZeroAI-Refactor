@@ -24,7 +24,6 @@ class Component(ABC):
         self.is_child = False  # 是否为子组件
         self.has_child = False  # 是否有孩子
         self.children = []  # 子组件列表
-        self.enable_sleep = True  # 是否开启默认time.sleep
         self._update_fps = 60
         self.update_timer = TimerKit()
 
@@ -120,5 +119,5 @@ class Component(ABC):
                     child.on_destroy()
                 self.on_destroy()  # 再销毁父组件
                 return
-            if self.enable_sleep:
+            if self._update_fps != -1:
                 time.sleep(self._update_fps)
