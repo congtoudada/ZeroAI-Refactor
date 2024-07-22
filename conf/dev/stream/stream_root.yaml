@@ -10,5 +10,5 @@ stream:
   # 画面缩小倍数（越大画面分辨率越低，性能越好）
   reduce_scale: 1
 
-# 算法update帧率
-update_fps: 30
+# 算法update帧率（-1表示无上限）
+update_fps: -1

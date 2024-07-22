@@ -21,3 +21,6 @@ stream:
     enable: False  # 是否保存视频
   draw_vis:
     enable: False  # 是否可视化
+
+# 更新帧率（-1表示无上限）
+update_fps: -1

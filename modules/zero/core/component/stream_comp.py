@@ -84,6 +84,8 @@ class StreamComponent(Component):
         else:
             # 丢帧
             self.cap.grab()
+        if not self.config.stream_runtime_enable:  # 非实时视频流，额外引入延迟
+            time.sleep(1.0 / self.frame_fps)
         return False
 
     def process_frame(self, frame):

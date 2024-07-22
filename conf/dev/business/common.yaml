@@ -5,3 +5,6 @@ stream:
     enable: True  # 是否保存视频
   draw_vis:
     enable: True  # 是否可视化
+
+# 更新帧率
+update_fps: 120
