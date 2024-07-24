@@ -40,6 +40,7 @@ class Component(ABC):
         json_string = json.dumps(self.config.__dict__, indent=4)
         logger.info(f"{self.pname} {type(self)} 配置文件参数: \n{json_string}")
         self._default_update_delay = 1.0 / self.config.update_fps
+        self._update_delay = self._default_update_delay
 
     def on_update(self) -> bool:
         self._update_delay = self._default_update_delay
