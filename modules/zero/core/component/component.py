@@ -122,5 +122,5 @@ class Component(ABC):
                     child.on_destroy()
                 self.on_destroy()  # 再销毁父组件
                 return
-            if self._update_delay > 0:
+            if self._update_delay >= 0:
                 time.sleep(self._update_delay)
