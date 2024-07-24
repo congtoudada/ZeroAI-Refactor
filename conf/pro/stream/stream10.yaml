@@ -1,0 +1,9 @@
+# 正门左手边（手机）
+INCLUDE:
+  - conf/pro/stream/stream_root.yaml
+
+stream:
+  cam_id: 10  # 摄像头编号（对应数据库）
+  url: rtsp://admin:zwjs1357@192.168.1.120:554/h264/ch1/main/av_stream10  # 取流地址（输入）
+
+output_port: camera10  # 输出端口
