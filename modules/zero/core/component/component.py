@@ -24,7 +24,8 @@ class Component(ABC):
         self.is_child = False  # 是否为子组件
         self.has_child = False  # 是否有孩子
         self.children = []  # 子组件列表
-        self._update_fps = 60
+        self._update_delay = 1.0 / 60  # 每帧延迟
+        self._default_update_delay = 1.0 / 60  # 默认帧延迟（避免反复计算）
         self.update_timer = TimerKit()
 
     def on_start(self):
@@ -38,9 +39,10 @@ class Component(ABC):
         # 转换为带缩进的JSON字符串并输出
         json_string = json.dumps(self.config.__dict__, indent=4)
         logger.info(f"{self.pname} {type(self)} 配置文件参数: \n{json_string}")
-        self._update_fps = 1.0 / self.config.update_fps
+        self._default_update_delay = 1.0 / self.config.update_fps
 
     def on_update(self) -> bool:
+        self._update_delay = self._default_update_delay
         return True
 
     def on_destroy(self):
@@ -119,5 +121,5 @@ class Component(ABC):
                     child.on_destroy()
                 self.on_destroy()  # 再销毁父组件
                 return
-            if self._update_fps != -1:
-                time.sleep(self._update_fps)
+            if self._update_delay != -1:
+                time.sleep(self._update_delay)

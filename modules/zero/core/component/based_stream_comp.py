@@ -81,6 +81,7 @@ class BasedStreamComponent(Component, ABC):
                 self.write_dict[i][StreamKey.STREAM_FPS.name] = fps
 
     def on_update(self) -> bool:
+        super().on_update()
         # 处理每一个输入端口
         for i, input_port in enumerate(self.config.input_ports):
             frame, user_data = self.on_resolve_per_stream(i)  # 解析流
@@ -105,6 +106,7 @@ class BasedStreamComponent(Component, ABC):
                 self.rtsp_writers[i].push(frame)
             if frame is not None and self.config.log_analysis:  # 记录算法耗时
                 self.update_timer.toc()
+                self._update_delay = max(self._default_update_delay - self.update_timer.recent_time, 0)  # 根据当前推理耗时反推延迟
         # 记录性能日志
         if self.config.log_analysis:
             AnalysisHelper.refresh(f"{self.pname} max time", self.update_timer.max_time * 1000, 100)

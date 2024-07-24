@@ -11,6 +11,7 @@ class TimerKit(object):
         self.diff = 0.
         self.average_time = 0.  # 平均耗时
         self.max_time = 0.  # 峰值耗时
+        self.recent_time = 0.  # 最近一次耗时
         self.duration = 0.
         self.MAX_FLAG = max_flag  # 前10次不记录
 
@@ -21,9 +22,10 @@ class TimerKit(object):
 
     def toc(self, average=True):
         self.calls += 1
+        self.diff = time.time() - self.start_time
+        self.recent_time = self.diff
         if self.calls < self.MAX_FLAG:
             return
-        self.diff = time.time() - self.start_time
         self.total_time += self.diff
         self.average_time = self.total_time / self.calls
         if average:
@@ -41,4 +43,5 @@ class TimerKit(object):
         self.diff = 0.
         self.average_time = 0.
         self.max_time = 0.
+        self.recent_time = 0.
         self.duration = 0.
