@@ -1,0 +1,7 @@
+INCLUDE:
+  - conf/pro/business/count/count_root.yaml
+  - conf/pro/business/count/count1_zone.yaml
+input_ports:  # 输入端口
+  - yolox-person1
+output_ports: []  # 输出端口
+

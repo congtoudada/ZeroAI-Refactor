@@ -1,0 +1,9 @@
+INCLUDE:
+  - conf/pro/business/common.yaml
+  - conf/pro/global/based_stream.yaml
+  - conf/pro/global/config.yaml
+stream:
+  output_dir: output/business/intrude  # 输出目录
+intrude:
+  valid_count: 10
+  lost_frames: 60
