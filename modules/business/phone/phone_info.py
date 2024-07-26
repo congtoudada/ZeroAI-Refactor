@@ -8,4 +8,7 @@ class PhoneInfo(BasedStreamInfo):
         self.phone_lost_frame = 60  # 消失多少帧丢弃
         self.phone_y_sort = False  # 分配id前进行y轴排序（时间换精度）
         self.phone_zone = []  # 手机检测区域 ltrb百分比 <-> [0][1][2][3]
+        self.phone_timing_enable = True
+        self.phone_warning_path = "output/business/phone/warning"
+        self.phone_timing_path = "output/business/phone/timing"
         super().__init__(data)  # 前面是声明，一定要最后调用这段赋值

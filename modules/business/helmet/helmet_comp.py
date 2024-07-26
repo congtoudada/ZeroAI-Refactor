@@ -37,7 +37,6 @@ class HelmetComponent(BasedStreamComponent):
         self.pool: ObjectPool = ObjectPool(20, HelmetItem)
         self.record_pool: ObjectPool = ObjectPool(20, DetectionRecord)
         self.data_dict: Dict[int, HelmetItem] = {}
-        self.border = 10
         self.tracker: BytetrackHelper = BytetrackHelper(self.config.stream_mot_config)  # 追踪器
         self.helmet_records: List[DetectionRecord] = []  # 安全帽目标检测结果（每帧更新）
         self.current_mot = None  # 当前帧人的追踪结果，如果非None，则最后要消耗掉检测结果
