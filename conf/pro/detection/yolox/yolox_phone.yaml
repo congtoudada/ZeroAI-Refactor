@@ -7,7 +7,7 @@ input_ports:  # 输入端口
   - camera10
 output_ports:  # 输出端口
   - yolox-phone9
-  - yolox-person10
+  - yolox-phone10
 
 stream:
   save_video:

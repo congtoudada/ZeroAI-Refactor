@@ -35,10 +35,14 @@ algorithm_list:
   # ------------------- 目标检测算法 -------------------
 #  - path: modules/algorithm/yolox_module/yolox/zero/component/yolox_comp.py  # 人头
 #    conf: conf/pro/detection/yolox/yolox_head.yaml
-  - path: modules/algorithm/yolox_module/yolox/zero/component/yolox_comp.py  # 人
-    conf: conf/pro/detection/yolox/yolox_person.yaml
+  - path: modules/algorithm/yolox_module/yolox/zero/component/yolox_comp.py  # 人1
+    conf: conf/pro/detection/yolox/yolox_person1.yaml
+  - path: modules/algorithm/yolox_module/yolox/zero/component/yolox_comp.py  # 人2
+    conf: conf/pro/detection/yolox/yolox_person2.yaml
   - path: modules/algorithm/yolox_module/yolox/zero/component/yolox_comp.py  # 安全帽
     conf: conf/pro/detection/yolox/yolox_helmet.yaml
+  - path: modules/algorithm/yolox_module/yolox/zero/component/yolox_comp.py  # 手机
+    conf: conf/pro/detection/yolox/yolox_phone.yaml
   # ------------------- 业务算法 -------------------
   - path: modules/business/count/count_comp.py  # 计数1
     conf: conf/pro/business/count/count1.yaml
