@@ -1,0 +1,18 @@
+INCLUDE:
+  - conf/pro/business/common.yaml
+  - conf/pro/global/based_stream.yaml
+  - conf/pro/global/config.yaml
+  - conf/pro/detection/labels/phone_labels.yaml
+stream:
+  output_dir: output/business/phone  # 输出目录
+  save_video:
+    filename: phone
+phone:
+  valid_count: 5  # 对象有效帧阈值
+  lost_frames: 60  # 消失多少帧丢弃
+  y_sort: False  # 分配id前进行y轴排序（时间换精度）
+  zone:
+    - 0.05  # l
+    - 0.05  # t
+    - 0.95  # r
+    - 0.95  # b
