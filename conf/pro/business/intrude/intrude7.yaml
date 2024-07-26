@@ -1,7 +1,0 @@
-INCLUDE:
-  - conf/pro/business/intrude/intrude7_zone.yaml
-  - conf/pro/business/intrude/intrude_root.yaml
-
-input_ports:  # 输入端口
-  - yolox-person7
-output_port: []  # 输出端口
