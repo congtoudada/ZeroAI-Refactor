@@ -1,5 +1,5 @@
 
-class HelmetItem:
+class PhoneItem:
     def __init__(self):
         self.obj_id = 0  # 目标id
         self.last_update_id = 0  # 上次更新帧
@@ -17,7 +17,6 @@ class HelmetItem:
     def update(self, last_update_id, cls):
         self.last_update_id = last_update_id
         if not self.has_warn:
-            # print(f"now_cls: {self.cls}, predict: {cls} valid_count: {self.valid_count}")
             if cls == self.cls:  # 当前检测类别和记录的类别相同，递增
                 self.valid_count += 1
             else:  # 不同则重置

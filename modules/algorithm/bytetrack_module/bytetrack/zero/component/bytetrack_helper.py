@@ -15,7 +15,6 @@ class BytetrackHelper:
         # byetrack 模型
         self.tracker = BYTETracker(self.config, frame_rate=self.config.bytetrack_args_fps)
 
-
     def inference(self, input_det):
         if input_det is None:
             return None

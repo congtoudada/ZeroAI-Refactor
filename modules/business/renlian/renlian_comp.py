@@ -143,7 +143,7 @@ def create_process(shared_memory, config_path: str):
     except Exception as e:
         # 使用 traceback 打印堆栈信息
         traceback_info = ''.join(traceback.format_exception(etype=type(e), value=e, tb=e.__traceback__))
-        logger.error(f"IntrudeComponent: {e}\n{traceback_info}")
+        logger.error(f"RenlianComponent: {e}\n{traceback_info}")
         comp.on_destroy()
 
 
