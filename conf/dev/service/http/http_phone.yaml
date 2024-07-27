@@ -1,4 +1,4 @@
 INCLUDE:
   - conf/dev/service/http/http_root.yaml
 
-input_port: SimpleHttp
+input_port: HttpForPhone

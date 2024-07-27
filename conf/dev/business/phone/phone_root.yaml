@@ -7,6 +7,7 @@ stream:
   output_dir: output/business/phone  # 输出目录
   save_video:
     filename: phone
+  http_config: conf/dev/service/http/http_phone_helper.yaml  # http帮助类配置
 phone:
   valid_count: 5  # 对象有效帧阈值
   lost_frames: 60  # 消失多少帧丢弃
