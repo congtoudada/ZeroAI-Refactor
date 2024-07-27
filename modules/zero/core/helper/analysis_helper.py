@@ -35,3 +35,8 @@ class AnalysisHelper:
         table = tabulate(show_data, headers=headers, tablefmt="grid")
         logger.info("\n" + table)
         return table
+
+    @staticmethod
+    def destroy():
+        AnalysisHelper.global_shared_memory.unlink()
+

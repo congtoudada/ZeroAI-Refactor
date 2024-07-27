@@ -1,9 +1,4 @@
 INCLUDE:
-  - conf/dev/global/config.yaml
-http:
-  web_address: 127.0.0.1:8080
-  delay_enable: True
-  delay_frame: 30
+  - conf/dev/service/http/http_root.yaml
 
 input_port: SimpleHttp
-update_fps: 30

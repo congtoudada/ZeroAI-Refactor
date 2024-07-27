@@ -5,8 +5,3 @@ input_ports:  # 输入端口 (先手机再人)
   - yolox-phone10
   - yolox-person10
 output_port: []  # 输出端口
-
-phone:
-  timing_enable: True
-  warning_path: output/business/phone/warning
-  timing_path: output/business/phone/timing

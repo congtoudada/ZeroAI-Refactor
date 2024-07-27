@@ -25,7 +25,7 @@ class SimpleHttpComponent(Component):
         super().__init__(shared_memory)
         self.config: SimpleHttpInfo = SimpleHttpInfo(ConfigKit.load(config_path))  # 配置文件内容
         self.http_shared_memory = UltraDict(name=self.config.input_port)
-        self.pname = f"[ {os.getpid()}:simple http ]"
+        self.pname = f"[ {os.getpid()}:{self.config.input_port} ]"
         self.req_queue = None  # 后端请求队列
         self.headers = {
             'content-type': 'application/json;charset=utf-8'

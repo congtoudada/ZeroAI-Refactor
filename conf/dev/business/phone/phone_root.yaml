@@ -7,10 +7,16 @@ stream:
   output_dir: output/business/phone  # 输出目录
   save_video:
     filename: phone
+  http_config: conf/dev/service/http/http_phone_helper.yaml  # http帮助类配置
 phone:
   valid_count: 5  # 对象有效帧阈值
   lost_frames: 60  # 消失多少帧丢弃
   y_sort: False  # 分配id前进行y轴排序（时间换精度）
+  timing_enable: True
+  warning_path: output/business/phone/warning
+  timing_path: output/business/phone/timing
+  timing_delta: 1
+  warning_uncropped_path: output/business/phone/uncropped_warning
   zone:
     - 0.05  # l
     - 0.05  # t
