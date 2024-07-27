@@ -110,6 +110,8 @@ class LaunchComponent(Component):
             logger.info(f"倒计时: {i}")
             time.sleep(1)
         self.shared_memory.unlink()  # 释放共享内存
+        if self.config.log_analysis:
+            UltraDict.unlink_by_name('analysis')
         logger.info("程序终止！")
         sys.exit(0)
 
