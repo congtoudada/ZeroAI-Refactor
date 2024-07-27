@@ -8,6 +8,7 @@ import numpy as np
 from business.card.card_info import CardInfo
 from business.card.card_item import CardItem
 from bytetrack.zero.component.bytetrack_helper import BytetrackHelper
+from simple_http.simple_http_helper import SimpleHttpHelper
 from zero.core.component.based_stream_comp import BasedStreamComponent
 from zero.core.helper.warn_helper import WarnHelper
 from zero.core.key.detection_key import DetectionKey
@@ -41,6 +42,7 @@ class CardComponent(BasedStreamComponent):
         self.valid = False  # False表示没有检测到代刷卡行为
         self.valid_count = self.config.card_warning_frame
         self.tracker: BytetrackHelper = BytetrackHelper(self.config.stream_mot_config)  # 追踪器
+        self.http_helper = SimpleHttpHelper(self.config.stream_http_config)  # http帮助类
 
     def on_start(self):
         super().on_start()
@@ -211,7 +213,7 @@ class CardComponent(BasedStreamComponent):
             logger.info(f"{self.pname} {key} 代刷卡行为")  # 控制台打印
             # WarnKit.send_warn_result(self.pname, self.output_dir, self.stream_cam_id, 3, 1, self.frame,
             #                          self.config.stream_export_img_enable, self.config.stream_web_enable)
-            WarnHelper.send_warn_result(self.pname, self.output_dir[0], self.cam_id, 3, 1,
+            self.http_helper.send_warn_result(self.pname, self.output_dir[0], self.cam_id, 3, 1,
                                         frame, self.config.stream_export_img_enable,
                                         self.config.stream_web_enable)
         else:

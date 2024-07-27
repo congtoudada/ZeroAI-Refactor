@@ -11,6 +11,7 @@ from business.common.match_record_helper import MatchRecordHelper
 from business.phone.phone_info import PhoneInfo
 from business.phone.phone_item import PhoneItem
 from bytetrack.zero.component.bytetrack_helper import BytetrackHelper
+from simple_http.simple_http_helper import SimpleHttpHelper
 from zero.core.component.based_stream_comp import BasedStreamComponent
 from zero.core.helper.warn_helper import WarnHelper
 from zero.core.key.detection_key import DetectionKey
@@ -40,6 +41,7 @@ class PhoneComponent(BasedStreamComponent):
         self.tracker: BytetrackHelper = BytetrackHelper(self.config.stream_mot_config)  # 人的追踪器
         self.phone_records: List[DetectionRecord] = []  # 手机目标检测结果（每帧更新）
         self.current_mot = None  # 当前帧人的追踪结果，如果非None，则最后要消耗掉检测结果
+        self.http_helper = SimpleHttpHelper(self.config.stream_http_config)  # http帮助类
 
     def on_start(self):
         """
@@ -147,7 +149,7 @@ class PhoneComponent(BasedStreamComponent):
                 logger.info(f"手机检测异常: obj_id:{phone_item.obj_id} cls:{phone_item.cls}")
                 phone_item.has_warn = True  # 一旦视为异常，则一直为异常，避免一个人重复报警
                 shot_img = ImgKit_img_box.draw_img_box(frame, ltrb)
-                WarnHelper.send_warn_result(self.pname, self.output_dir[0], self.cam_id, 1, 1,
+                self.http_helper.send_warn_result(self.pname, self.output_dir[0], self.cam_id, 1, 1,
                                             shot_img, self.config.stream_export_img_enable,
                                             self.config.stream_web_enable)
 

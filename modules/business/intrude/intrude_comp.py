@@ -9,6 +9,7 @@ from loguru import logger
 from business.intrude.intrude_info import IntrudeInfo
 from business.intrude.intrude_item import IntrudeItem
 from bytetrack.zero.component.bytetrack_helper import BytetrackHelper
+from simple_http.simple_http_helper import SimpleHttpHelper
 from zero.core.component.based_stream_comp import BasedStreamComponent
 from zero.core.helper.warn_helper import WarnHelper
 from zero.core.key.detection_key import DetectionKey
@@ -35,6 +36,7 @@ class IntrudeComponent(BasedStreamComponent):
         self.zone_points = []
         self.zone_vec = []
         self.tracker: BytetrackHelper = BytetrackHelper(self.config.stream_mot_config)  # 追踪器
+        self.http_helper = SimpleHttpHelper(self.config.stream_http_config)  # http帮助类
 
     def on_start(self):
         super().on_start()
@@ -110,7 +112,7 @@ class IntrudeComponent(BasedStreamComponent):
                     logger.info(f"{self.pname} obj_id: {obj_id} 入侵异常")
                     shot_img = ImgKit.crop_img(frame, ltrb)
                     item.has_warn = True
-                    WarnHelper.send_warn_result(self.pname, self.output_dir[0], self.cam_id,
+                    self.http_helper.send_warn_result(self.pname, self.output_dir[0], self.cam_id,
                                                 4, 1, shot_img,
                                                 self.config.stream_export_img_enable,
                                                 self.config.stream_web_enable)

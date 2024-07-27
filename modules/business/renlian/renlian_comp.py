@@ -10,7 +10,6 @@ from business.count.count_comp import CountComponent
 from business.renlian.renlian_info import RenlianInfo
 from business.renlian.renlian_item import RenlianItem
 from insight.zero.component.face_helper import FaceHelper
-from simple_http.simple_http_helper import SimpleHttpHelper
 from zero.core.key.global_key import GlobalKey
 from zero.utility.config_kit import ConfigKit
 from zero.utility.img_kit import ImgKit
@@ -77,7 +76,7 @@ class RenlianComponent(CountComponent):
                 "shotImg": img_path
             }
             # WebKit.post(f"{WebKit.Prefix_url}/count", data)
-            SimpleHttpHelper.post("face", data)
+            self.http_helper.post("face", data)
 
     def on_destroy_obj(self, obj_id):
         self.face_helper.destroy_obj(obj_id)

@@ -40,6 +40,7 @@ class CountComponent(BasedStreamComponent):
         self.green_points = []  # 预计算绿色点位置集合
         self.green_vecs = []  # 预计算绿色向量集合
         self.tracker: BytetrackHelper = BytetrackHelper(self.config.stream_mot_config)  # 追踪器
+        self.http_helper = SimpleHttpHelper(self.config.stream_http_config)  # http帮助类
 
     def on_start(self):
         super().on_start()
@@ -227,7 +228,7 @@ class CountComponent(BasedStreamComponent):
                 "shotImg": img_path
             }
             # WebKit.post(f"{WebKit.Prefix_url}/count", data)
-            SimpleHttpHelper.post("count", data)
+            self.http_helper.post("count", data)
 
     def on_destroy_obj(self, obj_id):
         pass

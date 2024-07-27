@@ -4,4 +4,6 @@ http:
   web_address: 127.0.0.1:8080
   delay_enable: True
   delay_frame: 30
+
+input_port: SimpleHttp
 update_fps: 30
