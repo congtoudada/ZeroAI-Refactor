@@ -168,6 +168,7 @@ class PhoneComponent(BasedStreamComponent):
                 self.http_helper.send_warn_result(self.pname, self.output_dir[0], self.cam_id, 1, 1,
                                             shot_img, self.config.stream_export_img_enable,
                                             self.config.stream_web_enable)
+                # 如果发送异步post就直接调用self.post
 
     def release_unused(self):
         # 清空长期未更新点
