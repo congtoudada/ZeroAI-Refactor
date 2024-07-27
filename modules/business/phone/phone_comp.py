@@ -257,7 +257,7 @@ class PhoneComponent(BasedStreamComponent):
         else:
             return False
 
-    def on_save_img(self, img, bbox=None, path='.', draw_box=False):
+    def on_save_img(self, idx, img, bbox=None, path='.', draw_box=False):
         if not os.path.exists(path):
             os.makedirs(path)
 
@@ -270,7 +270,7 @@ class PhoneComponent(BasedStreamComponent):
             return None, None
 
         time_str = time.strftime('%Y-%m-%d_%H-%M-%S', time.localtime())
-        image_name = f"0_{self.cam_id}_{time_str}_0.jpg"
+        image_name = f"0_{self.cam_id}_{time_str}_{idx}.jpg"
         image_path = os.path.join(path, image_name)
 
         try:
@@ -300,6 +300,8 @@ class PhoneComponent(BasedStreamComponent):
             os.remove(f)
 
     def check_and_save_timing_images(self, frame, all_bboxes):
+        if frame is None:
+            return
         # 检查是否启用了定时保存
         if not self.config.phone_timing_enable:
             print("调试：定时保存功能未启用！")
@@ -312,16 +314,18 @@ class PhoneComponent(BasedStreamComponent):
         if all_bboxes is not None:
             if (now - self.timing_record) >= delta:  # 如果时间间隔到了，则执行存图操作
                 if isinstance(all_bboxes, list):
-                    for bbox in all_bboxes:
-                        self.on_save_img(frame, bbox, self.config.phone_timing_path)
+                    for i, bbox in enumerate(all_bboxes):
+                        self.on_save_img(i, frame, bbox, self.config.phone_timing_path)
                 self.timing_record = now  # 更新时间记录
 
     def save_warning_images(self, frame, object_bboxes):
-        for bbox in object_bboxes:
+        if frame is None:
+            return
+        for i, bbox in enumerate(object_bboxes):
             # 保存一张完整warning图，并画上框
-            self.on_save_img(img=frame, bbox=bbox, path=self.config.phone_warning_uncropped_path, draw_box=True)
+            self.on_save_img(i, img=frame, bbox=bbox, path=self.config.phone_warning_uncropped_path, draw_box=True)
             # 保存一张裁剪warning图
-            self.on_save_img(img=frame, bbox=bbox, path=self.config.phone_warning_path, draw_box=False)
+            self.on_save_img(i, img=frame, bbox=bbox, path=self.config.phone_warning_path, draw_box=False)
 
 
 def create_process(shared_memory, config_path: str):
