@@ -1,9 +1,11 @@
+import glob
 import os
 import time
 import traceback
 from typing import Dict, List
 import cv2
 import numpy as np
+from PIL import Image, ImageDraw
 from loguru import logger
 
 from business.common.detection_record import DetectionRecord
@@ -40,6 +42,8 @@ class PhoneComponent(BasedStreamComponent):
         self.tracker: BytetrackHelper = BytetrackHelper(self.config.stream_mot_config)  # 人的追踪器
         self.phone_records: List[DetectionRecord] = []  # 手机目标检测结果（每帧更新）
         self.current_mot = None  # 当前帧人的追踪结果，如果非None，则最后要消耗掉检测结果
+        self.timing_record = float('-inf')  # reid相关
+        self.warn_person_bboxes = []  # 报警人的包围框
 
     def on_start(self):
         """
@@ -100,8 +104,19 @@ class PhoneComponent(BasedStreamComponent):
         else:  # 1号端口取的是人的检测结果
             mot_result = self.tracker.inference(input_det)  # 返回对齐输出后的mot结果
             self.current_mot = mot_result  # 缓存追踪结果（主要用于帧结束时判断是否消耗掉检测结果）
+            # 定期存图
+            if mot_result is not None:
+                person_all_bboxes = []
+                for i, obj in enumerate(mot_result):
+                    ltrb = obj[:4]
+                    person_all_bboxes.append(ltrb)
+                self.check_and_save_timing_images(frame, person_all_bboxes)
             # 根据mot结果进行手机核心业务！！！
             self._phone_core(frame, mot_result, self.frame_id_cache[0], frame.shape[1], frame.shape[0])
+            # 报警存图
+            if len(self.warn_person_bboxes) > 0:
+                self.save_warning_images(frame, self.warn_person_bboxes)
+                self.warn_person_bboxes.clear()
             return mot_result
 
     def _phone_core(self, frame, input_mot, current_frame_id, width, height) -> bool:
@@ -146,6 +161,7 @@ class PhoneComponent(BasedStreamComponent):
             if phone_item.cls == 0:  # 持有手机，报警！
                 logger.info(f"手机检测异常: obj_id:{phone_item.obj_id} cls:{phone_item.cls}")
                 phone_item.has_warn = True  # 一旦视为异常，则一直为异常，避免一个人重复报警
+                self.warn_person_bboxes.append(ltrb)  # 报警人的包围框
                 shot_img = ImgKit_img_box.draw_img_box(frame, ltrb)
                 WarnHelper.send_warn_result(self.pname, self.output_dir[0], self.cam_id, 1, 1,
                                             shot_img, self.config.stream_export_img_enable,
@@ -240,6 +256,72 @@ class PhoneComponent(BasedStreamComponent):
             return True
         else:
             return False
+
+    def on_save_img(self, img, bbox=None, path='.', draw_box=False):
+        if not os.path.exists(path):
+            os.makedirs(path)
+
+        if draw_box:  # True
+            img = self.draw_img_box(img, bbox)
+        if not draw_box:
+            img = img[int(bbox[1]):int(bbox[3]), int(bbox[0]):int(bbox[2])]
+        if img.size == 0:
+            print("警告: 裁剪的图像为空。")
+            return None, None
+
+        time_str = time.strftime('%Y-%m-%d_%H-%M-%S', time.localtime())
+        image_name = f"0_{self.cam_id}_{time_str}_0.jpg"
+        image_path = os.path.join(path, image_name)
+
+        try:
+            cv2.imwrite(image_path, img)
+        except Exception as e:
+            print(f"错误: 保存图像失败 - {e}")
+            return None, None
+
+        return image_path, img
+
+    def draw_img_box(self, im, ltrb):
+        x1, y1, x2, y2 = ltrb
+        im_pil = Image.fromarray(im)
+        draw = ImageDraw.Draw(im_pil)
+        draw.rectangle(((x1, y1), (x2, y2)), outline='red', width=5)
+        im_with_rectangle = np.array(im_pil)
+        return im_with_rectangle
+
+    def count_images_in_directory(self, directory):
+        # 返回目录中的jpg图片数量
+        return len(glob.glob(os.path.join(directory, '*.jpg')))
+
+    def clear_directory(self, directory):
+        # 删除目录中的所有文件
+        files = glob.glob(os.path.join(directory, '*'))
+        for f in files:
+            os.remove(f)
+
+    def check_and_save_timing_images(self, frame, all_bboxes):
+        # 检查是否启用了定时保存
+        if not self.config.phone_timing_enable:
+            print("调试：定时保存功能未启用！")
+            return  # 如果未启用，则直接返回
+
+        # 设置时间间隔为1秒
+        now = time.time()
+        delta = self.config.phone_timing_delta
+
+        if all_bboxes is not None:
+            if (now - self.timing_record) >= delta:  # 如果时间间隔到了，则执行存图操作
+                if isinstance(all_bboxes, list):
+                    for bbox in all_bboxes:
+                        self.on_save_img(frame, bbox, self.config.phone_timing_path)
+                self.timing_record = now  # 更新时间记录
+
+    def save_warning_images(self, frame, object_bboxes):
+        for bbox in object_bboxes:
+            # 保存一张完整warning图，并画上框
+            self.on_save_img(img=frame, bbox=bbox, path=self.config.phone_warning_uncropped_path, draw_box=True)
+            # 保存一张裁剪warning图
+            self.on_save_img(img=frame, bbox=bbox, path=self.config.phone_warning_path, draw_box=False)
 
 
 def create_process(shared_memory, config_path: str):

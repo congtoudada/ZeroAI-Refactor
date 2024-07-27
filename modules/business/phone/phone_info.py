@@ -11,4 +11,6 @@ class PhoneInfo(BasedStreamInfo):
         self.phone_timing_enable = True
         self.phone_warning_path = "output/business/phone/warning"
         self.phone_timing_path = "output/business/phone/timing"
+        self.phone_timing_delta = 1
+        self.phone_warning_uncropped_path = ""
         super().__init__(data)  # 前面是声明，一定要最后调用这段赋值
