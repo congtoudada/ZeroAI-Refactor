@@ -21,12 +21,10 @@ class SimpleHttpComponent(Component):
     """
     简单的Http服务
     """
-    SHARED_MEMORY_NAME = "simple_http"
-
     def __init__(self, shared_memory, config_path: str):
         super().__init__(shared_memory)
         self.config: SimpleHttpInfo = SimpleHttpInfo(ConfigKit.load(config_path))  # 配置文件内容
-        self.http_shared_memory = UltraDict(name=SimpleHttpComponent.SHARED_MEMORY_NAME)
+        self.http_shared_memory = UltraDict(name=self.config.input_port)
         self.pname = f"[ {os.getpid()}:simple http ]"
         self.req_queue = None  # 后端请求队列
         self.headers = {
@@ -39,7 +37,7 @@ class SimpleHttpComponent(Component):
         super().on_start()
         # 初始化请求缓存
         self.req_queue = multiprocessing.Manager().Queue()
-        self.http_shared_memory[SimpleHttpKey.HTTP_REQ.name] = self.req_queue
+        self.http_shared_memory[self.config.input_port] = self.req_queue
 
     def on_update(self) -> bool:
         # 处理请求

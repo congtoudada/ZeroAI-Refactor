@@ -79,6 +79,7 @@ class BasedStreamComponent(Component, ABC):
                 self.write_dict[i][StreamKey.STREAM_WIDTH.name] = width
                 self.write_dict[i][StreamKey.STREAM_HEIGHT.name] = height
                 self.write_dict[i][StreamKey.STREAM_FPS.name] = fps
+            # 初始化http请求帮助类
 
     def on_update(self) -> bool:
         super().on_update()
