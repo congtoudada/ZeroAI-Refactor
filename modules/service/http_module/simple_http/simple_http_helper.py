@@ -1,13 +1,12 @@
 import os
 import time
-
 import cv2
 from UltraDict import UltraDict
 from loguru import logger
 
-from scripts.config_kit import ConfigKit
 from simple_http.simple_http_helper_info import SimpleHttpHelperInfo
 from simple_http.simple_http_key import SimpleHttpKey
+from zero.utility.config_kit import ConfigKit
 
 
 class SimpleHttpHelper:
