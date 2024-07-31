@@ -228,7 +228,7 @@ class CountComponent(BasedStreamComponent):
                 "shotImg": img_path
             }
             # WebKit.post(f"{WebKit.Prefix_url}/count", data)
-            self.http_helper.post("count", data)
+            self.http_helper.post("/algorithm/count", data)
 
     def on_destroy_obj(self, obj_id):
         pass
