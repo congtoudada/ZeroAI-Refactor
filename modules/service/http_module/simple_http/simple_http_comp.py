@@ -2,6 +2,7 @@ import json
 import multiprocessing
 import os
 import time
+import traceback
 from typing import List
 
 import requests
@@ -61,8 +62,9 @@ class SimpleHttpComponent(Component):
                     self.send_request(task.url, task.method, task.content)
                     self.task_pool.push(task)
                     remove_keys.append(i)
-            for i in range(len(remove_keys)):
-                self.delay_queue.pop(i)
+            # for i in range(len(remove_keys)):
+            for i, key in enumerate(remove_keys):
+                self.delay_queue.pop(key)
         return False
 
     def send_request_delay(self, url, method, content):
@@ -88,7 +90,7 @@ class SimpleHttpComponent(Component):
                 logger.error(f"{self.pname} 请求失败[{response.status_code}]，没有收到后端响应，路径: {url}")
 
     def _get_full_url(self, uri: str) -> str:
-        return f"http://{self.config.http_web_address}/algorithm/{uri}"
+        return f"http://{self.config.http_web_address}{uri}"
 
     def on_destroy(self):
         self.http_shared_memory.unlink()
@@ -104,7 +106,12 @@ def create_process(shared_memory, config_path: str):
     except KeyboardInterrupt:
         comp.on_destroy()
     except Exception as e:
-        logger.error(f"SimpleHttpComponent: {e}")
+        # logger.error(f"SimpleHttpComponent: {e}")
+        # comp.on_destroy()
+        # 使用traceback打印堆栈信息到标准错误
+        traceback.print_exc()
+        # 或者，如果你想将堆栈信息记录到日志
+        logger.error(f"SimpleHttpComponent: {e}\n{traceback.format_exc()}")
         comp.on_destroy()
 
 

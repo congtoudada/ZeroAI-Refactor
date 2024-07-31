@@ -63,4 +63,4 @@ class SimpleHttpHelper:
                 "personId": per_id,
                 "shotImg": img_path
             }
-            self.post("warn", data)
+            self.post("/algorithm/warn", data)
