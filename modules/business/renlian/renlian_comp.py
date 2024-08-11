@@ -76,7 +76,7 @@ class RenlianComponent(CountComponent):
                 "shotImg": img_path
             }
             # WebKit.post(f"{WebKit.Prefix_url}/count", data)
-            self.http_helper.post("algorithm/face", data)
+            self.http_helper.post("/algorithm/face", data)
 
     def on_destroy_obj(self, obj_id):
         self.face_helper.destroy_obj(obj_id)

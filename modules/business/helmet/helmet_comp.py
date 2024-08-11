@@ -136,7 +136,7 @@ class HelmetComponent(BasedStreamComponent):
     def process_result(self, frame, helmet_item: HelmetItem, ltrb):
         # 没有报过警且异常状态保持一段时间才发送
         if not helmet_item.has_warn and helmet_item.get_valid_count() > self.config.helmet_valid_count:
-            if helmet_item.cls == 0 or helmet_item.cls == 2:
+            if helmet_item.cls == 2 or helmet_item.cls == 0:
                 logger.info(f"安全帽佩戴异常: obj_id:{helmet_item.obj_id} cls:{helmet_item.cls}")
                 helmet_item.has_warn = True  # 一旦视为异常，则一直为异常，避免一个人重复报警
                 shot_img = ImgKit_img_box.draw_img_box(frame, ltrb)

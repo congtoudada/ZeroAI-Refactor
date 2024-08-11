@@ -11,17 +11,17 @@ class HelmetItem:
         self.obj_id = obj_id
         self.last_update_id = last_update_id
         self.valid_count = 0
-        # 未佩戴也算错误佩戴
-        if cls == 2:
-            cls = 0
+        # 错误佩戴算正确佩戴
+        if cls == 0:
+            cls = 1
         self.cls = cls
         self.has_warn = False
 
     def update(self, last_update_id, cls):
         self.last_update_id = last_update_id
-        # 未佩戴也算错误佩戴
-        if cls == 2:
-            cls = 0
+        # 错误佩戴算正确佩戴
+        if cls == 0:
+            cls = 1
         if not self.has_warn:
             # print(f"now_cls: {self.cls}, predict: {cls} valid_count: {self.valid_count}")
             if cls == self.cls:  # 当前检测类别和记录的类别相同，递增
