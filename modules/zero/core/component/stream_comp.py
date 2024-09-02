@@ -102,6 +102,7 @@ class StreamComponent(Component):
         self.stream_shared_memory[self.config.output_port] = stream_package
 
     def on_destroy(self):
+        time.sleep(1)  # 下游业务先释放内存（这里可以设置0~3的值）
         self.stream_shared_memory.unlink()
         super().on_destroy()
 
