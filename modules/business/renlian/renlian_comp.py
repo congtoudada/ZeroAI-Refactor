@@ -63,8 +63,11 @@ class RenlianComponent(CountComponent):
         img_path = os.path.join(self.output_dir[0], f"{time_str}_{status_str}_{item.per_id}.jpg")
         img_shot = ImgKit.crop_img(frame, item.ltrb)
         if self.config.stream_export_img_enable:
-            cv2.imwrite(img_path, img_shot)
-            logger.info(f"{self.pname} 存图成功，路径: {img_path}")
+            if img_shot is None or img_shot.shape[0] == 0 or img_shot.shape[1] == 0:
+                pass
+            else:
+                cv2.imwrite(img_path, img_shot)
+                logger.info(f"{self.pname} 存图成功，路径: {img_path}")
 
         if self.config.stream_web_enable:
             # 通知后端
