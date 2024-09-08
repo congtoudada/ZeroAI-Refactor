@@ -87,6 +87,8 @@ class PhoneComponent(BasedStreamComponent):
         if input_det is None:
             return None
 
+        # 只保留两个检测模型的第0类别
+        input_det = input_det[input_det[:, 5] == 0]
         if idx == 0:  # 0号端口取的数据是手机检测结果
             for i in range(len(self.phone_records)):
                 self.record_pool.push(self.phone_records[i])
