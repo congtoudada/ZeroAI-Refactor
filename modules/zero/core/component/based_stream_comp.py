@@ -157,8 +157,8 @@ class BasedStreamComponent(Component, ABC):
         return frame
 
     def on_destroy(self):
-        for vid in self.video_writers:
-            vid.on_destroy()
         for i in range(len(self.write_dict)):
             self.write_dict[i].unlink()
+        for vid in self.video_writers:
+            vid.on_destroy()
         super().on_destroy()
