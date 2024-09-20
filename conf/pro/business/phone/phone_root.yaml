@@ -9,9 +9,16 @@ stream:
     filename: phone
   http_config: conf/pro/service/http/http_phone_helper.yaml  # http配置
 phone:
-  valid_count: 5  # 对象有效帧阈值
+  valid_count: 8  # 对象有效帧阈值
   lost_frames: 60  # 消失多少帧丢弃
   y_sort: False  # 分配id前进行y轴排序（时间换精度）
+  timing_enable: True
+  timing_delta: 5
+  timing_path: output/business/phone/timing
+  warning_path: output/business/phone/warning
+  warning_uncropped_path: output/business/phone/uncropped_warning
+  reid_gallery_path: res/images/reid_tmp_data/id_gt
+  reid_uri: /process2
   zone:
     - 0.05  # l
     - 0.05  # t

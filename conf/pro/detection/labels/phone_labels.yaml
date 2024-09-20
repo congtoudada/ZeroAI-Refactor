@@ -1,6 +1,4 @@
 detection:
   labels:
     - phone
-    - book
-    - water
-    - cup
+    - other
