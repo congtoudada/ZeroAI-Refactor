@@ -3,7 +3,7 @@ stream:
   output_absolute: False  # 是否导出绝对路径
   save_video:
     enable: False  # 是否保存视频
-    resize: False  # 是否缩放图像存储（会涉及一次图像拷贝）
+    resize: True  # 是否缩放图像存储（会涉及一次图像拷贝，建议开启，不然很容易导不出）
     width: 1920  # 输出视频宽
     height: 1080  # 输出视频高
     fps: 12  # 输出视频帧率

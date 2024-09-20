@@ -1,6 +1,7 @@
 detection:
   labels:
     - person
+    - other
 
 #detection:
 #  labels:

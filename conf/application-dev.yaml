@@ -12,16 +12,14 @@ service_list:
 
 # 视频流
 stream_list:
-#  - path: modules/zero/core/component/stream_comp.py
-#    conf: conf/dev/stream/stream1.yaml
   - path: modules/zero/core/component/stream_comp.py
-    conf: conf/dev/stream/stream2.yaml
-#  - path: modules/zero/core/component/stream_comp.py
-#    conf: conf/dev/stream/stream3.yaml
+    conf: conf/dev/stream/stream1.yaml
 
 # 算法
 algorithm_list:
   # ------------------- 目标检测算法 -------------------
+#  - path: modules/algorithm/yolox_module/yolox/zero/component/yolox_comp.py  # 计数
+#    conf: conf/dev/detection/yolox/yolox_count.yaml
 #  - path: modules/algorithm/yolox_module/yolox/zero/component/yolox_comp.py  # 人头
 #    conf: conf/dev/detection/yolox/yolox_head.yaml
   - path: modules/algorithm/yolox_module/yolox/zero/component/yolox_comp.py  # 人
@@ -31,17 +29,17 @@ algorithm_list:
   - path: modules/algorithm/yolox_module/yolox/zero/component/yolox_comp.py  # 手机
     conf: conf/dev/detection/yolox/yolox_phone.yaml
   # ------------------- 业务算法 -------------------
-#  - path: modules/business/count/count_comp.py  # 计数
+#  - path: modules/business/count/count_comp.py  # 计数（计数）
 #    conf: conf/dev/business/count/count1.yaml
-#  - path: modules/business/renlian/renlian_comp.py  # 人脸
-#    conf: conf/dev/business/renlian/renlian1.yaml
-#  - path: modules/business/intrude/intrude_comp.py  # 入侵
+#  - path: modules/business/renlian/renlian_comp.py  # 人脸（人头）
+#     conf: conf/dev/business/renlian/renlian1.yaml
+#  - path: modules/business/intrude/intrude_comp.py  # 入侵（人）
 #    conf: conf/dev/business/intrude/intrude1.yaml
-#  - path: modules/business/helmet/helmet_comp.py  # 安全帽
+#  - path: modules/business/helmet/helmet_comp.py  # 安全帽（人+安全帽）
 #    conf: conf/dev/business/helmet/helmet1.yaml
-#  - path: modules/business/card/card_comp.py  # 代刷卡
+#  - path: modules/business/card/card_comp.py  # 代刷卡（人）
 #    conf: conf/dev/business/card/card1.yaml
-  - path: modules/business/phone/phone_comp.py  # 手机
+  - path: modules/business/phone/phone_comp.py  # 手机（人+手机）
     conf: conf/dev/business/phone/phone1.yaml
 
 app:

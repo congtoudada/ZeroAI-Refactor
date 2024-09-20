@@ -1,12 +1,13 @@
 INCLUDE:
-  - conf/dev/detection/yolox/yolox_root.yaml
-  - conf/dev/detection/labels/helmet_labels.yaml
+  - conf/pro/detection/yolox/yolox_root.yaml
+  - conf/pro/detection/labels/head_labels.yaml
 
 input_ports:  # 输入端口
   - camera1
-
+#  - camera2
 output_ports:  # 输出端口
   - yolox-head1
+#  - yolox-person2
 
 stream:
   save_video:

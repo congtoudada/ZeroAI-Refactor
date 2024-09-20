@@ -67,6 +67,8 @@ class RenlianComponent(CountComponent):
                 pass
             else:
                 cv2.imwrite(img_path, img_shot)
+                if item.per_id != 1:
+                    self.save_reid_img(frame, item.ltrb, self.config.reid_output_path, item.per_id)
                 logger.info(f"{self.pname} 存图成功，路径: {img_path}")
 
         if self.config.stream_web_enable:
@@ -130,6 +132,28 @@ class RenlianComponent(CountComponent):
         y2 = im.shape[0] if y2 > im.shape[0] else y2
         return np.ascontiguousarray(np.copy(im[int(y1): int(y2), int(x1): int(x2)]))
 
+    def save_reid_img(self, img, bbox=None, path='', id=1):
+        # 创建目录
+        if not os.path.exists(path):
+            os.makedirs(path)
+        # 裁剪图像
+        img = img[int(bbox[1]):int(bbox[3]), int(bbox[0]):int(bbox[2])]
+
+        if img.size == 0:
+            print("警告: 裁剪的图像为空。")
+            return None, None
+        # 图片命名
+        image_name = f"{id}_{self.cam_id}.jpg"
+        image_path = os.path.join(path, image_name)
+
+        # 保存图片
+        try:
+            cv2.imwrite(image_path, img)
+        except Exception as e:
+            print(f"错误: 保存图像失败 - {e}")
+            return None, None
+
+        return image_path, img
 
 def create_process(shared_memory, config_path: str):
     comp: RenlianComponent = RenlianComponent(shared_memory, config_path)  # 创建组件

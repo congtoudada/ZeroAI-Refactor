@@ -216,6 +216,11 @@ class CountComponent(BasedStreamComponent):
         status_str = "In" if status == 1 else "Out"
         img_path = os.path.join(self.output_dir[0], f"{time_str}_{status_str}.jpg")
         img_shot = ImgKit.crop_img(frame, item.ltrb)
+
+        if img_shot.size == 0:
+            logger.error(f"{self.pname} 警告: 裁剪的图像为空。")
+            return
+
         if self.config.stream_export_img_enable:
             cv2.imwrite(img_path, img_shot)
             logger.info(f"{self.pname} 存图成功，路径: {img_path}")

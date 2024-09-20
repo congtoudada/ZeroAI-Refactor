@@ -87,8 +87,6 @@ class PhoneComponent(BasedStreamComponent):
         if input_det is None:
             return None
 
-        # 只保留两个检测模型的第0类别
-        input_det = input_det[input_det[:, 5] == 0]
         if idx == 0:  # 0号端口取的数据是手机检测结果
             for i in range(len(self.phone_records)):
                 self.record_pool.push(self.phone_records[i])
@@ -102,6 +100,7 @@ class PhoneComponent(BasedStreamComponent):
                 self.phone_records.append(record)
             return None
         else:  # 1号端口取的是人的检测结果
+            input_det = input_det[input_det[:, 5] == 0]  # 过滤出人
             mot_result = self.tracker.inference(input_det)  # 返回对齐输出后的mot结果
             self.current_mot = mot_result  # 缓存追踪结果（主要用于帧结束时判断是否消耗掉检测结果）
             # 根据mot结果进行手机核心业务！！！

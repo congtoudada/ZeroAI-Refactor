@@ -112,6 +112,8 @@ class LaunchComponent(Component):
         if self.config.log_analysis:
             AnalysisHelper.destroy()
         self.shared_memory.unlink()  # 释放共享内存
+        if os.path.exists(self.config.app_running_file):
+            os.remove(self.config.app_running_file)
         logger.info("程序终止！")
         sys.exit(0)
 

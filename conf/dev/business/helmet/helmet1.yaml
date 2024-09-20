@@ -2,6 +2,6 @@ INCLUDE:
   - conf/dev/business/helmet/helmet_root.yaml
 
 input_ports:  # 输入端口 (先安全帽再人)
-  - yolox-helmet2
-  - yolox-person2
+  - yolox-helmet1
+  - yolox-person1
 output_port: []  # 输出端口

@@ -1,7 +1,10 @@
 INCLUDE:
-  - conf/dev/service/http/http_root.yaml
-
+  - conf/dev/global/config.yaml
 http:
+  web_address: 127.0.0.1:5000
   delay_enable: False
+  delay_frame: 30
+
+update_fps: 30
 
 input_port: HttpForPhone

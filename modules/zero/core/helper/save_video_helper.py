@@ -12,6 +12,10 @@ class SaveVideoHelper:
         self.height = height
         self.set_output(output_path, fps, width, height)
 
+    def __del__(self):
+        self.on_destroy()
+
+
     def set_output(self, output_path, fps, width, height):
         if self.vid_writer is not None:
             self.vid_writer.release()
