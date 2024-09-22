@@ -7,3 +7,5 @@ stream:
 intrude:
   valid_count: 10
   lost_frames: 60
+  face_enable: True  # 是否启用人脸识别
+  face_config: conf/pro/business/intrude/face_helper7.yaml  # 人脸请求配置

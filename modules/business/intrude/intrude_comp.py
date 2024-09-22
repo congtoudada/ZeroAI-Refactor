@@ -9,6 +9,7 @@ from loguru import logger
 from business.intrude.intrude_info import IntrudeInfo
 from business.intrude.intrude_item import IntrudeItem
 from bytetrack.zero.component.bytetrack_helper import BytetrackHelper
+from insight.zero.component.face_helper import FaceHelper
 from simple_http.simple_http_helper import SimpleHttpHelper
 from zero.core.component.based_stream_comp import BasedStreamComponent
 from zero.core.helper.warn_helper import WarnHelper
@@ -37,9 +38,12 @@ class IntrudeComponent(BasedStreamComponent):
         self.zone_vec = []
         self.tracker: BytetrackHelper = BytetrackHelper(self.config.stream_mot_config)  # 追踪器
         self.http_helper = SimpleHttpHelper(self.config.stream_http_config)  # http帮助类
+        self.face_helper: FaceHelper = None
 
     def on_start(self):
         super().on_start()
+        if self.config.intrude_face_enable:
+            self.face_helper = FaceHelper(self.config.intrude_face_config, self.cam_id, self._face_callback)
         self.cam_id = self.read_dict[0][StreamKey.STREAM_CAM_ID.name]
         self.stream_width = int(self.read_dict[0][StreamKey.STREAM_WIDTH.name])
         self.stream_height = int(self.read_dict[0][StreamKey.STREAM_HEIGHT.name])
@@ -59,7 +63,36 @@ class IntrudeComponent(BasedStreamComponent):
     def on_update(self) -> bool:
         self.release_unused()  # 清理无用资源（一定要在最前面调用）
         super().on_update()
+        if self.config.intrude_face_enable:
+            for key, value in self.data_dict.items():
+                if self._can_send(key, value):
+                    # self.face_helper.send(key, self._crop_img(self.frames[0], value.ltrb))
+                    ltrb = value.ltrb  # 如果是检测人，最好截上半身人脸检测
+                    ltrb[3] = ltrb[3] * 0.67
+                    self.face_helper.send(key, self._crop_img(self.frames[0], ltrb))
+                    # break  # 每帧最多发送一个请求（待定）
+            self.face_helper.tick()
         return True
+
+    def _can_send(self, obj_id, item):
+        diff = self.frame_id_cache[0] - item.last_send_req
+        if self.face_helper.can_send(obj_id, diff, item.base_y, item.retry):
+            self.data_dict[obj_id].last_send_req = self.frame_id_cache[0]
+            return True
+        else:
+            return False
+
+    def _crop_img(self, im, ltrb):
+        x1, y1, x2, y2 = ltrb[0], ltrb[1], ltrb[2], ltrb[3]
+        return np.ascontiguousarray(np.copy(im[int(y1): int(y2), int(x1): int(x2)]))
+        # return im[int(y1): int(y2), int(x1): int(x2)]
+
+    def _face_callback(self, obj_id, per_id, score):
+        if self.data_dict.__contains__(obj_id):
+            if per_id == 1:
+                self.data_dict[obj_id].retry += 1
+            self.data_dict[obj_id].per_id = per_id
+            self.data_dict[obj_id].score = score
 
     def on_resolve_per_stream(self, read_idx):
         frame, _ = super().on_resolve_per_stream(read_idx)  # 解析视频帧id+视频帧
@@ -93,6 +126,12 @@ class IntrudeComponent(BasedStreamComponent):
         # [5]: 类别 (下标从0开始)
         # [6]: id
         """
+        if input_mot is None:
+            return
+        # 清空前一帧状态
+        for item in self.data_dict.values():
+            item.reset_update()
+
         for obj in input_mot:
             ltrb = obj[:4]
             conf = obj[4]
@@ -104,9 +143,11 @@ class IntrudeComponent(BasedStreamComponent):
                     item = self.pool.pop()
                     item.init(obj_id, current_frame_id)
                     self.data_dict[obj_id] = item
-                else:  # 已经记录过
+                else:  # 已经记录过（更新状态）
                     in_warn = self._is_in_warn(ltrb)  # 判断是否处于警戒区
-                    self.data_dict[obj_id].update(current_frame_id, in_warn)
+                    x, y = self._get_base(0, ltrb)  # 基于包围盒中心点计算百分比x,y
+                    self.data_dict[obj_id].update(current_frame_id, in_warn, x / width, y / height, ltrb)
+
                 # 处理Item结果
                 item = self.data_dict[obj_id]
                 # 如果Item没有报过警且报警帧数超过有效帧，判定为入侵异常
@@ -115,9 +156,20 @@ class IntrudeComponent(BasedStreamComponent):
                     shot_img = ImgKit.crop_img(frame, ltrb)
                     item.has_warn = True
                     self.http_helper.send_warn_result(self.pname, self.output_dir[0], self.cam_id,
-                                                4, 1, shot_img,
+                                                4, item.per_id, shot_img,
                                                 self.config.stream_export_img_enable,
                                                 self.config.stream_web_enable)
+
+    def _get_base(self, base, ltrb):
+        """
+        检测基准 0:包围盒中心点 1:包围盒左上角
+        :param base:
+        :return:
+        """
+        if base == 0:
+            return (ltrb[0] + ltrb[2]) / 2, (ltrb[1] + ltrb[3]) / 2
+        else:
+            return ltrb[0], ltrb[1]
 
     def release_unused(self):
         """
@@ -131,6 +183,7 @@ class IntrudeComponent(BasedStreamComponent):
         clear_keys.reverse()  # 从尾巴往前删除，确保索引正确性
         for key in clear_keys:
             self.pool.push(self.data_dict[key])
+            self.face_helper.destroy_obj(key)
             self.data_dict.pop(key)  # 从字典中移除item
 
     def _is_in_warn(self, ltrb) -> bool:
@@ -185,25 +238,50 @@ class IntrudeComponent(BasedStreamComponent):
                 if cls == 0:
                     ltrb = obj[:4]
                     obj_id = int(obj[6])
+                    obj_color = self._get_color(obj_id)
                     screen_x = int((ltrb[0] + ltrb[2]) * 0.5)
                     screen_y = int((ltrb[1] + ltrb[3]) * 0.5)
                     cv2.circle(frame, (screen_x, screen_y), 4, (118, 154, 242), line_thickness)
                     cv2.rectangle(frame, pt1=(int(ltrb[0]), int(ltrb[1])), pt2=(int(ltrb[2]), int(ltrb[3])),
-                                  color=(0, 0, 255), thickness=line_thickness)
+                                  color=obj_color, thickness=line_thickness)
                     cv2.putText(frame, f"{obj_id}",
                                 (int(ltrb[0]), int(ltrb[1])),
-                                cv2.FONT_HERSHEY_PLAIN, 1, (0, 0, 255), thickness=text_thickness)
+                                cv2.FONT_HERSHEY_PLAIN, 1, obj_color, thickness=text_thickness)
                     if self.data_dict.__contains__(obj_id):
                         if self.data_dict[obj_id].has_warn:
                             cv2.putText(frame, "error",
                                         (int(ltrb[0] + 50), int(ltrb[1])),
-                                        cv2.FONT_HERSHEY_PLAIN, 1, (0, 0, 255), thickness=text_thickness)
+                                        cv2.FONT_HERSHEY_PLAIN, 1, obj_color, thickness=text_thickness)
                         else:
                             cv2.putText(frame, "normal",
                                         (int(ltrb[0] + 50), int(ltrb[1])),
-                                        cv2.FONT_HERSHEY_PLAIN, 1, (0, 0, 255), thickness=text_thickness)
+                                        cv2.FONT_HERSHEY_PLAIN, 1, obj_color, thickness=text_thickness)
+
+        if self.config.intrude_face_enable:
+            face_dict = self.face_helper.face_dict
+            # 参考线
+            point1 = (0, int(self.face_helper.config.face_cull_up_y * self.stream_height))
+            point2 = (self.stream_width, int(self.face_helper.config.face_cull_up_y * self.stream_height))
+            point3 = (0, int((1 - self.face_helper.config.face_cull_down_y) * self.stream_height))
+            point4 = (self.stream_width, int((1 - self.face_helper.config.face_cull_down_y) * self.stream_height))
+            cv2.line(frame, point1, point2, (127, 127, 127), 1)  # 绘制线条
+            cv2.line(frame, point3, point4, (127, 127, 127), 1)  # 绘制线条
+            # 人脸识别结果
+            for key, value in face_dict.items():
+                if self.data_dict.__contains__(key):
+                    ltrb = self.data_dict[key].ltrb
+                    obj_id = self.data_dict[key].obj_id
+                    obj_color = self._get_color(obj_id)
+                    cv2.putText(frame, f"per_id:{face_dict[key]['per_id']}",
+                                (int((ltrb[0] + ltrb[2]) / 2), int(self.data_dict[key].ltrb[1])),
+                                cv2.FONT_HERSHEY_PLAIN, 1, obj_color, thickness=1)
         # 可视化并返回
         return frame
+
+    def _get_color(self, idx):
+        idx = (1 + idx) * 3
+        color = ((37 * idx) % 255, (17 * idx) % 255, (29 * idx) % 255)
+        return color
 
 
 def create_process(shared_memory, config_path: str):
