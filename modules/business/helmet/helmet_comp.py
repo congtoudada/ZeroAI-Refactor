@@ -143,8 +143,8 @@ class HelmetComponent(BasedStreamComponent):
                 helmet_item.has_warn = True  # 一旦视为异常，则一直为异常，避免一个人重复报警
                 shot_img = ImgKit_img_box.draw_img_box(frame, ltrb)
                 self.http_helper.send_warn_result(self.pname, self.output_dir[0], self.cam_id, 2, 1,
-                                            shot_img, self.config.stream_export_img_enable,
-                                            self.config.stream_web_enable)
+                                                  shot_img, 1, self.config.stream_export_img_enable,
+                                                  self.config.stream_web_enable)
 
     def release_unused(self):
         # 清空长期未更新点

@@ -215,9 +215,10 @@ class CardComponent(BasedStreamComponent):
             logger.info(f"{self.pname} {key} 代刷卡行为")  # 控制台打印
             # WarnKit.send_warn_result(self.pname, self.output_dir, self.stream_cam_id, 3, 1, self.frame,
             #                          self.config.stream_export_img_enable, self.config.stream_web_enable)
-            self.http_helper.send_warn_result(self.pname, self.output_dir[0], self.cam_id, 3, 1,
-                                        frame, self.config.stream_export_img_enable,
-                                        self.config.stream_web_enable)
+            self.http_helper.send_warn_result(self.pname, self.output_dir[0], self.cam_id,
+                                              3, 1, frame, 1,
+                                              self.config.stream_export_img_enable,
+                                              self.config.stream_web_enable)
         else:
             self.gate_dict[key] = 2
             # print(str(key)+"正常通过")   #控制台打印

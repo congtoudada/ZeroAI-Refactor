@@ -156,9 +156,9 @@ class IntrudeComponent(BasedStreamComponent):
                     shot_img = ImgKit.crop_img(frame, ltrb)
                     item.has_warn = True
                     self.http_helper.send_warn_result(self.pname, self.output_dir[0], self.cam_id,
-                                                4, item.per_id, shot_img,
-                                                self.config.stream_export_img_enable,
-                                                self.config.stream_web_enable)
+                                                4, item.per_id, shot_img, 1,
+                                                      self.config.stream_export_img_enable,
+                                                      self.config.stream_web_enable)
 
     def _get_base(self, base, ltrb):
         """

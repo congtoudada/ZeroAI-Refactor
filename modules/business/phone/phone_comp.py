@@ -123,13 +123,13 @@ class PhoneComponent(BasedStreamComponent):
             if len(self.warn_person_bboxes) > 0:
                 self.save_warning_images(frame, self.warn_person_bboxes)
                 # 交给reid模块处理并报警给后端 
-                print("尝试发送请求给reid等待计算结果++++++++++++++++++++++++++++++++++++",self.warn_person_bboxes)
+                print("尝试发送请求给reid等待计算结果++++++++++++++++++++++++++++++++++++", self.warn_person_bboxes)
                 data = {
                     "query_directory": self.config.phone_warning_path,  #新增报警
-                    "gallery_directory":self.config.reid_gallery_path 
+                    "gallery_directory": self.config.reid_gallery_path
                 }
                 # response = requests.post(self.config.reid_uri, json=data, headers={"Content-Type": "application/json"})  # 发送POST请求
-                self.http_helper.post(uri=self.config.reid_uri, data=data) #(异步!!)🟥
+                self.http_helper.post(uri=self.config.reid_uri, data=data)  #(异步!!)🟥
                 self.warn_person_bboxes.clear()
                 
             return mot_result
@@ -161,10 +161,10 @@ class PhoneComponent(BasedStreamComponent):
                 # 更新人的状态
                 if not self.data_dict.__contains__(obj_id):  # 没有被记录过，则记录
                     item = self.pool.pop()
-                    item.init(obj_id, phone.cls, current_frame_id)
+                    item.init(obj_id, phone.cls, phone.score, current_frame_id)
                     self.data_dict[obj_id] = item
                 else:  # 已经记录过
-                    self.data_dict[obj_id].update(current_frame_id, phone.cls)
+                    self.data_dict[obj_id].update(current_frame_id, phone.cls, phone.score)
                 # 计算结果
                 self.process_result(frame, self.data_dict[obj_id], ltrb)  # 满足异常条件就记录
                 # 匹配过的record需标记，避免反复匹配
