@@ -36,13 +36,13 @@ class RenlianComponent(CountComponent):
     def on_update(self) -> bool:
         if super().on_update():
             for key, value in self.item_dict.items():
-                if self._can_send(key, value):
+                if self._cen_send(key, value):
                     self.face_helper.send(key, self._crop_img(self.frames[0], value.ltrb))
                     # break  # 每帧最多发送一个请求（待定）
         self.face_helper.tick()
         return True
 
-    def _can_send(self, obj_id, item):
+    def _cen_send(self, obj_id, item):
         diff = self.frame_id_cache[0] - item.last_send_req
         if self.face_helper.can_send(obj_id, diff, item.base_y, item.retry):
             self.item_dict[obj_id].last_send_req = self.frame_id_cache[0]

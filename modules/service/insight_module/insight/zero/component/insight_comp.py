@@ -44,9 +44,6 @@ class InsightComponent(Component):
         # 初始化请求缓存
         self.req_queue = multiprocessing.Manager().Queue()
         self.face_shared_memory[FaceKey.FACE_REQ.name] = self.req_queue
-        if self.config.insight_debug_enable:
-            if not os.path.exists(self.config.insight_debug_output):
-                os.makedirs(self.config.insight_debug_output, exist_ok=True)
 
     def on_update(self) -> bool:
         # 检查特征库是否需要重建
@@ -72,11 +69,6 @@ class InsightComponent(Component):
             per_id, score = self.face_model.search_face_image(face_image, self.config.insight_vis)
             # if per_id != 1:
             #     logger.info(f"{self.pname} 识别成功! cam_id: {cam_id}, obj_id: {obj_id}, per_id: {per_id}, score: {score}")
-            # debug输出
-            if self.config.insight_debug_enable:
-                cv2.imwrite(os.path.join(self.config.insight_debug_output,
-                                         f"obj{obj_id}_cam{cam_id}_per{per_id}_score{score:.2f}.jpg"), face_image)
-
             # 响应输出结果
             rsp_key = FaceKey.FACE_RSP.name + str(pid)
             if self.face_shared_memory.__contains__(rsp_key):
