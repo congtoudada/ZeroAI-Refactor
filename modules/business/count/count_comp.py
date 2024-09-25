@@ -89,7 +89,6 @@ class CountComponent(BasedStreamComponent):
         """
         if input_det is None:
             return None
-        
         input_det = input_det[input_det[:, 5] == 0]
         mot_result = self.tracker.inference(input_det)  # 返回对齐输出后的mot结果
         # 根据mot结果进行计数

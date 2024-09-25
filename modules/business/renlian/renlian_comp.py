@@ -140,7 +140,7 @@ class RenlianComponent(CountComponent):
         img = img[int(bbox[1]):int(bbox[3]), int(bbox[0]):int(bbox[2])]
 
         if img.size == 0:
-            logger.error(f"{self.pname} 警告: 裁剪的图像为空。")
+            print("警告: 裁剪的图像为空。")
             return None, None
         # 图片命名
         image_name = f"{id}_{self.cam_id}.jpg"
