@@ -38,7 +38,7 @@ class SimpleHttpHelper:
             return
         self.shared_memory[self.config.output_port].put(req_package)
 
-    def send_warn_result(self, pname, output_dir, camId, warnType, per_id, shot_img, warn_score, img_enable, web_enable):
+    def send_warn_result(self, pname, output_dir, camId, warnType, per_id, shot_img, img_enable, web_enable):
         # 导出图
         time_str = time.strftime('%Y-%m-%d_%H-%M-%S', time.localtime())
         warn_str = ""
@@ -61,8 +61,7 @@ class SimpleHttpHelper:
                 "camId": camId,
                 "warnType":  warnType,
                 "personId": per_id,
-                "shotImg": img_path,
-                "warnScore": warn_score
+                "shotImg": img_path
             }
             if self.config.debug_enable:
                 logger.info(f"{pname}发送数据: {data}")
