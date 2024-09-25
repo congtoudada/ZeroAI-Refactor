@@ -21,7 +21,7 @@ stream_list:
   - path: modules/zero/core/component/stream_comp.py  # 114: 人脸
     conf: conf/pro/stream/stream4.yaml
 #  - path: modules/zero/core/component/stream_comp.py # 115: 无用
-  #  conf: conf/pro/stream/stream5.yaml
+#    conf: conf/pro/stream/stream5.yaml
   - path: modules/zero/core/component/stream_comp.py # 116: 人脸，安全帽
     conf: conf/pro/stream/stream6.yaml
   - path: modules/zero/core/component/stream_comp.py # 117: 入侵
@@ -37,8 +37,6 @@ algorithm_list:
   # ------------------- 目标检测算法 -------------------
 #  - path: modules/algorithm/yolox_module/yolox/zero/component/yolox_comp.py  # 人头
 #    conf: conf/pro/detection/yolox/yolox_head.yaml
-  - path: modules/algorithm/yolox_module/yolox/zero/component/yolox_comp.py  # keliu
-    conf: conf/pro/detection/yolox/yolox_count.yaml
   - path: modules/algorithm/yolox_module/yolox/zero/component/yolox_comp.py  # 人1
     conf: conf/pro/detection/yolox/yolox_person1.yaml
   - path: modules/algorithm/yolox_module/yolox/zero/component/yolox_comp.py  # 人2
@@ -70,6 +68,6 @@ algorithm_list:
 app:
   running_file: bin/pro/runtime.pkl  # 框架运行时标识路径，运行时生成，删除该文件可以关闭算法端
   analysis_enable: True  # 是否打印性能分析报告
-  analysis_interval: 300  # 每隔x秒打印一次性能分析报告
+  analysis_interval: 20  # 每隔x秒打印一次性能分析报告
 
 update_fps: 1  # 主进程更新帧率

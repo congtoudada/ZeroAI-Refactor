@@ -2,8 +2,7 @@ INCLUDE:
   - conf/pro/global/config.yaml
 http:
   web_address: 127.0.0.1:5000
-  # web_address: 10.0.8.198:8080
-  delay_enable: True
+  delay_enable: False
   delay_frame: 30
 
 update_fps: 30
