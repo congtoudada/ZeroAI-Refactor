@@ -174,7 +174,7 @@ class PhoneComponent(BasedStreamComponent):
         # 没有报过警且异常状态保持一段时间才发送
         if not phone_item.has_warn and phone_item.get_valid_count() > self.config.phone_valid_count:
             if phone_item.cls == 0:  # 持有手机，报警！
-                logger.info(f"手机检测异常: obj_id:{phone_item.obj_id} cls:{phone_item.cls}")
+                logger.info(f"手机检测异常: obj_id:{phone_item.obj_id} cls:{phone_item.cls} warn_score:{phone_item.warn_score}")
                 phone_item.has_warn = True  # 一旦视为异常，则一直为异常，避免一个人重复报警
                 self.warn_person_bboxes.append(ltrb)  # 报警人的包围框
                 shot_img = ImgKit_img_box.draw_img_box(frame, ltrb)

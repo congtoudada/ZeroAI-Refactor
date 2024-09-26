@@ -76,6 +76,8 @@ class IntrudeComponent(BasedStreamComponent):
 
     def _can_send(self, obj_id, item):
         diff = self.frame_id_cache[0] - item.last_send_req
+        if item.valid_count == 0:  # 没有进入报警区域，就直接返回
+            return False
         if self.face_helper.can_send(obj_id, diff, item.base_y, item.retry):
             self.data_dict[obj_id].last_send_req = self.frame_id_cache[0]
             return True
@@ -150,6 +152,10 @@ class IntrudeComponent(BasedStreamComponent):
 
                 # 处理Item结果
                 item = self.data_dict[obj_id]
+                # 如果开启人脸检测，小于重试次数的陌生人不报警
+                if self.config.intrude_face_enable:
+                    if item.retry < self.face_helper.config.face_max_retry and item.per_id == 1:
+                        return
                 # 如果Item没有报过警且报警帧数超过有效帧，判定为入侵异常
                 if not item.has_warn and item.get_valid_count() > self.config.intrude_valid_count:
                     logger.info(f"{self.pname} obj_id: {obj_id} 入侵异常")
