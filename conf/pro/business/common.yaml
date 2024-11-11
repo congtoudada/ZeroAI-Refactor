@@ -8,4 +8,4 @@ stream:
     enable: False  # 是否可视化
 
 # 更新帧率
-#update_fps: 30
+update_fps: 60

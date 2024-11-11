@@ -26,8 +26,8 @@ algorithm_list:
     conf: conf/dev/detection/yolox/yolox_person.yaml
 #  - path: modules/algorithm/yolox_module/yolox/zero/component/yolox_comp.py  # 安全帽
 #    conf: conf/dev/detection/yolox/yolox_helmet.yaml
-#  - path: modules/algorithm/yolox_module/yolox/zero/component/yolox_comp.py  # 手机
-#    conf: conf/dev/detection/yolox/yolox_phone.yaml
+  # - path: modules/algorithm/yolox_module/yolox/zero/component/yolox_comp.py  # 手机
+  #   conf: conf/dev/detection/yolox/yolox_phone.yaml
   # ------------------- 业务算法 -------------------
 #  - path: modules/business/count/count_comp.py  # 计数（计数）
 #    conf: conf/dev/business/count/count1.yaml
@@ -39,8 +39,8 @@ algorithm_list:
 #    conf: conf/dev/business/helmet/helmet1.yaml
 #  - path: modules/business/card/card_comp.py  # 代刷卡（人）
 #    conf: conf/dev/business/card/card1.yaml
-#  - path: modules/business/phone/phone_comp.py  # 手机（人+手机）
-#    conf: conf/dev/business/phone/phone1.yaml
+  # - path: modules/business/phone/phone_comp.py  # 手机（人+手机）
+  #   conf: conf/dev/business/phone/phone1.yaml
 
 app:
   running_file: bin/dev/runtime.pkl  # 框架运行时标识路径，运行时生成，删除该文件可以关闭算法端

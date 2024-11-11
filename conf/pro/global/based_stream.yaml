@@ -21,7 +21,7 @@ stream:
     enable: False
     url: rtsp://127.0.0.1:554/video
 
-update_fps: 30
+update_fps: 60
 # 需子类(重)定义
 # input_ports
 # output_ports
