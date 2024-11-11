@@ -68,7 +68,7 @@ class IntrudeComponent(BasedStreamComponent):
                 if self._can_send(key, value):
                     # self.face_helper.send(key, self._crop_img(self.frames[0], value.ltrb))
                     ltrb = value.ltrb  # 如果是检测人，最好截上半身人脸检测
-                    ltrb[3] = ltrb[3] * 0.67
+                    # ltrb[3] = ltrb[3] * 0.67
                     self.face_helper.send(key, self._crop_img(self.frames[0], ltrb))
                     # break  # 每帧最多发送一个请求（待定）
             self.face_helper.tick()
@@ -155,7 +155,7 @@ class IntrudeComponent(BasedStreamComponent):
                 # 如果开启人脸检测，小于重试次数的陌生人不报警
                 if self.config.intrude_face_enable:
                     if item.retry < self.face_helper.config.face_max_retry and item.per_id == 1:
-                        return
+                        continue
                 # 如果Item没有报过警且报警帧数超过有效帧，判定为入侵异常
                 if not item.has_warn and item.get_valid_count() > self.config.intrude_valid_count:
                     logger.info(f"{self.pname} obj_id: {obj_id} 入侵异常")

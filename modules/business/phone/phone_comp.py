@@ -24,6 +24,7 @@ from zero.utility.img_kit import ImgKit_img_box
 from zero.utility.object_pool import ObjectPool
 import requests
 
+
 class PhoneComponent(BasedStreamComponent):
     """
     手机检测组件
@@ -45,6 +46,7 @@ class PhoneComponent(BasedStreamComponent):
         self.current_mot = None  # 当前帧人的追踪结果，如果非None，则最后要消耗掉检测结果
         self.timing_record = float('-inf')  # reid相关
         self.warn_person_bboxes = []  # 报警人的包围框
+        self.warn_person_score = []  # 报警人的置信度
         self.http_helper = SimpleHttpHelper(self.config.stream_http_config)  # http帮助类
 
     def on_start(self):
@@ -117,21 +119,22 @@ class PhoneComponent(BasedStreamComponent):
             # print("tiaoshi+++++++++++++++++116")
             # 根据mot结果进行手机核心业务！！！
             self._phone_core(frame, mot_result, self.frame_id_cache[0], frame.shape[1], frame.shape[0])
-            
+
             # 报警存图
             # print("tiaoshi+++++120", len(self.warn_person_bboxes))
             if len(self.warn_person_bboxes) > 0:
-                self.save_warning_images(frame, self.warn_person_bboxes)
-                # 交给reid模块处理并报警给后端 
-                print("尝试发送请求给reid等待计算结果++++++++++++++++++++++++++++++++++++", self.warn_person_bboxes)
+                self.save_warning_images(frame, self.warn_person_bboxes, self.warn_person_score)
+                # 交给reid模块处理并报警给后端
+                print("——————————尝试发送手机报警请求给reid, 等待计算结果——————————————", self.warn_person_bboxes)
                 data = {
-                    "query_directory": self.config.phone_warning_path,  #新增报警
-                    "gallery_directory": self.config.reid_gallery_path
+                    "query_directory": self.config.phone_warning_path,  # 新增报警
+                    "gallery_directory": self.config.reid_gallery_path,
                 }
                 # response = requests.post(self.config.reid_uri, json=data, headers={"Content-Type": "application/json"})  # 发送POST请求
-                self.http_helper.post(uri=self.config.reid_uri, data=data)  #(异步!!)🟥
+                self.http_helper.post(uri=self.config.reid_uri, data=data)  # (异步!!)🟥
                 self.warn_person_bboxes.clear()
-                
+                self.warn_person_score.clear()
+
             return mot_result
 
     def _phone_core(self, frame, input_mot, current_frame_id, width, height) -> bool:
@@ -153,8 +156,8 @@ class PhoneComponent(BasedStreamComponent):
             # 策略二：距离匹配，谁离手机近匹配谁，有最大距离限制（全局匹配）
             w = ltrb[2] - ltrb[0]
             h = ltrb[3] - ltrb[1]
-            match_idx = MatchRecordHelper.match_distance_l2(ltrb + (0, 0, 0, -h/2),
-                                                            self.phone_records, max_distance=(w+h)/2)
+            match_idx = MatchRecordHelper.match_distance_l2(ltrb + (0, 0, 0, -h / 2),
+                                                            self.phone_records, max_distance=(w + h) / 2)
             if match_idx != -1:  # 存在匹配项
                 obj_id = int(obj[6])
                 phone = self.phone_records[match_idx]
@@ -174,10 +177,13 @@ class PhoneComponent(BasedStreamComponent):
         # 没有报过警且异常状态保持一段时间才发送
         if not phone_item.has_warn and phone_item.get_valid_count() > self.config.phone_valid_count:
             if phone_item.cls == 0:  # 持有手机，报警！
-                logger.info(f"手机检测异常: obj_id:{phone_item.obj_id} cls:{phone_item.cls} warn_score:{phone_item.warn_score}")
+                logger.info(
+                    f"手机检测异常: obj_id:{phone_item.obj_id} cls:{phone_item.cls} warn_score:{phone_item.warn_score}")
                 phone_item.has_warn = True  # 一旦视为异常，则一直为异常，避免一个人重复报警
+                # 9月26日，加入 warn_socre
                 self.warn_person_bboxes.append(ltrb)  # 报警人的包围框
-                shot_img = ImgKit_img_box.draw_img_box(frame, ltrb)
+                self.warn_person_score.append(phone_item.warn_score)  # 报警人的包围框
+                shot_img = ImgKit_img_box.draw_img_box(frame, ltrb)  # 画线，后续展示完整的图
                 # self.http_helper.send_warn_result(self.pname, self.output_dir[0], self.cam_id, 1, 1,
                 #                             shot_img, self.config.stream_export_img_enable,
                 #                             self.config.stream_web_enable)
@@ -273,12 +279,36 @@ class PhoneComponent(BasedStreamComponent):
         else:
             return False
 
-    def on_save_img(self, idx, img, bbox=None, path='.', draw_box=False):
+    def on_save_img_full(self, idx, img, bbox=None, path='.', draw_box=False, warn_score=None):
+        if not os.path.exists(path):
+            os.makedirs(path)
+
+        if draw_box and bbox is not None:  # 确保bbox不为空
+            img = self.draw_img_box(img, bbox)
+
+        if img.size == 0:
+            print("警告: 裁剪的图像为空。")
+            return None, None
+
+        time_str = time.strftime('%Y-%m-%d_%H-%M-%S', time.localtime())
+        # 在文件名中加入warn_score，确保warn_score为字符串形式
+        image_name = f"0_{self.cam_id}_{time_str}_{idx}_{warn_score}.jpg" if warn_score is not None else f"0_{self.cam_id}_{time_str}_{idx}.jpg"
+        image_path = os.path.join(path, image_name)
+
+        try:
+            cv2.imwrite(image_path, img)
+        except Exception as e:
+            print(f"错误: 保存图像失败 - {e}")
+            return None, None
+
+        return image_path, img
+
+    def on_save_img_crop(self, idx, img, bbox=None, path='.', draw_box=False):
         if not os.path.exists(path):
             os.makedirs(path)
 
         if draw_box:  # True
-            img = self.draw_img_box(img, bbox)
+            print("警告: 保存逻辑错误。")
         if not draw_box:
             img = img[int(bbox[1]):int(bbox[3]), int(bbox[0]):int(bbox[2])]
         if img.size == 0:
@@ -331,17 +361,18 @@ class PhoneComponent(BasedStreamComponent):
             if (now - self.timing_record) >= delta:  # 如果时间间隔到了，则执行存图操作
                 if isinstance(all_bboxes, list):
                     for i, bbox in enumerate(all_bboxes):
-                        self.on_save_img(i, frame, bbox, self.config.phone_timing_path)
+                        self.on_save_img_crop(i, frame, bbox, self.config.phone_timing_path)
                 self.timing_record = now  # 更新时间记录
 
-    def save_warning_images(self, frame, object_bboxes):
+    def save_warning_images(self, frame, object_bboxes, warn_score):
         if frame is None:
             return
         for i, bbox in enumerate(object_bboxes):
             # 保存一张完整warning图，并画上框
-            self.on_save_img(i, img=frame, bbox=bbox, path=self.config.phone_warning_uncropped_path, draw_box=True)
+            self.on_save_img_full(i, img=frame, bbox=bbox, path=self.config.phone_warning_uncropped_path, draw_box=True,
+                                  warn_score=f"{self.warn_person_score[i]:.3f}")
             # 保存一张裁剪warning图
-            self.on_save_img(i, img=frame, bbox=bbox, path=self.config.phone_warning_path, draw_box=False)
+            self.on_save_img_crop(i, img=frame, bbox=bbox, path=self.config.phone_warning_path, draw_box=False)
 
 
 def create_process(shared_memory, config_path: str):

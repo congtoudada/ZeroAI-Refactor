@@ -83,6 +83,9 @@ class FaceRecognizer(object):
             # image = image_utils.read_image_ch(image_path)
             if raw_image is None:
                 return 1, 0
+            if raw_image.size == 0:
+                logger.error(f"{self.pname} raw_image size == 0")
+                return 1, 0
             image = image_utils.resize_image(raw_image, size=(None, 640))
             image, face_info = self.search_face_task(image, vis=vis)
             if len(face_info['label']) > 0:
