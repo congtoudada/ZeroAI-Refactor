@@ -11,7 +11,7 @@ from loguru import logger
 from business.common.detection_record import DetectionRecord
 from business.common.match_record_helper import MatchRecordHelper
 from business.phone.phone_info import PhoneInfo
-from business.phone.phone_item import PhoneItem
+from business.phone.phone_user_item import PhoneUserItem
 from bytetrack.zero.component.bytetrack_helper import BytetrackHelper
 from simple_http.simple_http_helper import SimpleHttpHelper
 from zero.core.component.based_stream_comp import BasedStreamComponent
@@ -38,15 +38,17 @@ class PhoneComponent(BasedStreamComponent):
         self.stream_width = 0  # 画面宽
         self.stream_height = 0  # 画面高
         # key: obj_id value: cls
-        self.pool: ObjectPool = ObjectPool(20, PhoneItem)  # PhoneItem对象池
+        self.user_pool: ObjectPool = ObjectPool(20, PhoneUserItem)  # PhoneUserItem对象池
         self.record_pool: ObjectPool = ObjectPool(20, DetectionRecord)  # 检测记录对象池
-        self.data_dict: Dict[int, PhoneItem] = {}  # 有效对象字典
+        self.user_dict: Dict[int, PhoneUserItem] = {}  # PhoneUser字典
         self.tracker: BytetrackHelper = BytetrackHelper(self.config.stream_mot_config)  # 人的追踪器
         self.phone_records: List[DetectionRecord] = []  # 手机目标检测结果（每帧更新）
         self.current_mot = None  # 当前帧人的追踪结果，如果非None，则最后要消耗掉检测结果
-        self.timing_record = float('-inf')  # reid相关
-        self.warn_person_bboxes = []  # 报警人的包围框
-        self.warn_person_score = []  # 报警人的置信度
+        self.timing_record1 = float('-inf')  # reid相关
+        self.timing_record2 = float('-inf')  # reid相关
+        self.warn_person_bboxes = []  # 报警时人的包围框
+        self.warn_phone_bboxes = []  # 报警时手机的包围框
+        self.warn_phone_score = []  # 报警时手机的置信度
         self.http_helper = SimpleHttpHelper(self.config.stream_http_config)  # http帮助类
 
     def on_start(self):
@@ -116,14 +118,22 @@ class PhoneComponent(BasedStreamComponent):
                     ltrb = obj[:4]
                     person_all_bboxes.append(ltrb)
                 self.check_and_save_timing_images(frame, person_all_bboxes)
-            # print("tiaoshi+++++++++++++++++116")
+
+            # 定期删除：每delta2秒执行一次，删去timing文件夹中已经存放了超过age_limit秒的旧图片
+            delta2 = 180  # 定期清空历史抓拍图片，每delta2时间执行一次以免影响性能
+            now = time.time()
+            # print("调试123     ——————————",self.config.phone_timing_path)
+            if (now - self.timing_record2) >= delta2:
+                self.clear_old_files(self.config.phone_timing_path)  # output/business/phone/timing
+                self.timing_record2 = now
+
             # 根据mot结果进行手机核心业务！！！
             self._phone_core(frame, mot_result, self.frame_id_cache[0], frame.shape[1], frame.shape[0])
 
             # 报警存图
             # print("tiaoshi+++++120", len(self.warn_person_bboxes))
             if len(self.warn_person_bboxes) > 0:
-                self.save_warning_images(frame, self.warn_person_bboxes, self.warn_person_score)
+                self.save_warning_images(frame, self.warn_person_bboxes)
                 # 交给reid模块处理并报警给后端
                 print("——————————尝试发送手机报警请求给reid, 等待计算结果——————————————", self.warn_person_bboxes)
                 data = {
@@ -133,7 +143,8 @@ class PhoneComponent(BasedStreamComponent):
                 # response = requests.post(self.config.reid_uri, json=data, headers={"Content-Type": "application/json"})  # 发送POST请求
                 self.http_helper.post(uri=self.config.reid_uri, data=data)  # (异步!!)🟥
                 self.warn_person_bboxes.clear()
-                self.warn_person_score.clear()
+                self.warn_phone_bboxes.clear()
+                self.warn_phone_score.clear()
 
             return mot_result
 
@@ -145,45 +156,63 @@ class PhoneComponent(BasedStreamComponent):
             sort_indices = np.argsort(input_mot[:, 1])
             input_mot = input_mot[sort_indices]
             self.phone_records.sort(key=lambda x: x.ltrb[1])
-        # 遍历每个人的追踪结果
-        for i, obj in enumerate(input_mot):
-            ltrb = obj[:4]
-            # 只有在检测区域内才匹配
-            if not self._is_in_zone(ltrb, self.config.phone_zone):
-                continue
-            # 策略一：包围盒匹配，手机在人里面才匹配（满足就返回，贪婪匹配）
-            # match_idx = MatchRecordHelper.match_bbox(ltrb, self.phone_records)
-            # 策略二：距离匹配，谁离手机近匹配谁，有最大距离限制（全局匹配）
-            w = ltrb[2] - ltrb[0]
-            h = ltrb[3] - ltrb[1]
-            match_idx = MatchRecordHelper.match_distance_l2(ltrb + (0, 0, 0, -h / 2),
-                                                            self.phone_records, max_distance=(w + h) / 2)
-            if match_idx != -1:  # 存在匹配项
-                obj_id = int(obj[6])
-                phone = self.phone_records[match_idx]
-                # 更新人的状态
-                if not self.data_dict.__contains__(obj_id):  # 没有被记录过，则记录
-                    item = self.pool.pop()
-                    item.init(obj_id, phone.cls, phone.score, current_frame_id)
-                    self.data_dict[obj_id] = item
-                else:  # 已经记录过
-                    self.data_dict[obj_id].update(current_frame_id, phone.cls, phone.score)
-                # 计算结果
-                self.process_result(frame, self.data_dict[obj_id], ltrb)  # 满足异常条件就记录
-                # 匹配过的record需标记，避免反复匹配
-                phone.match_action(obj_id)
 
-    def process_result(self, frame, phone_item: PhoneItem, ltrb):
+        # 遍历每台手机，找到离最近的人
+        for i, phone in enumerate(self.phone_records):
+            phone_ltrb = phone.ltrb
+            phone_base = (phone_ltrb[0] + phone_ltrb[2]) * 0.5, (phone_ltrb[1] + phone_ltrb[3]) * 0.5
+            # 只有手机在检测区域内才匹配(通过l2距离计算结果)
+            if not self._is_in_zone(phone_ltrb, self.config.phone_zone):
+                continue
+
+            min_id = -1  # 最近的人的索引(对应input_mot)
+            min_dis = float("inf")
+            for j, obj in enumerate(input_mot):
+                ltrb = obj[:4]
+                w = ltrb[2] - ltrb[0]
+                h = ltrb[3] - ltrb[1]
+                # 基准点计算为上半身中心
+                upper_ltrb = ltrb + (0, 0, 0, -h / 2)
+                upper_base = ((upper_ltrb[0] + upper_ltrb[2]) * 0.5, (upper_ltrb[1] + upper_ltrb[3]) * 0.5)
+                # 计算距离
+                dis = ((phone_base[0] - upper_base[0]) * (phone_base[0] - upper_base[0]) *
+                       (phone_base[1] - upper_base[1]) * (phone_base[1] - upper_base[1]))
+                if dis < min_dis:
+                    min_id = j
+                    min_dis = dis
+            # 存在匹配项，更新人的信息
+            if min_id != -1:
+                obj = input_mot[min_id]
+                obj_ltrb = obj[:4]
+                obj_id = obj[6]
+                # 人没有被记录过，则记录
+                if not self.user_dict.__contains__(obj_id):
+                    item = self.user_pool.pop()
+                    item.init(obj_id, phone.cls, phone.score, current_frame_id)
+                    self.user_dict[obj_id] = item
+                # 成功匹配且已经记录过，更新人的状态
+                self.user_dict[obj_id].match_update(obj_ltrb, phone.cls, phone.score, phone_ltrb)
+        # 遍历一次人，汇总结果
+        for i, obj in enumerate(input_mot):
+            obj_id = obj[6]
+            if not self.user_dict.__contains__(obj_id):
+                continue
+            # 计算结果，满足异常条件就记录
+            self.process_result(frame, self.user_dict[obj_id])
+            # 当前帧收尾
+            self.user_dict[obj_id].late_update(current_frame_id)
+
+    def process_result(self, frame, phone_item: PhoneUserItem):
         # 没有报过警且异常状态保持一段时间才发送
-        if not phone_item.has_warn and phone_item.get_valid_count() > self.config.phone_valid_count:
+        if not phone_item.has_warn and phone_item.get_valid_count() >= self.config.phone_valid_count:
             if phone_item.cls == 0:  # 持有手机，报警！
                 logger.info(
-                    f"手机检测异常: obj_id:{phone_item.obj_id} cls:{phone_item.cls} warn_score:{phone_item.warn_score}")
+                    f"手机检测异常: obj_id:{phone_item.obj_id} warn_score:{phone_item.warn_score}")
                 phone_item.has_warn = True  # 一旦视为异常，则一直为异常，避免一个人重复报警
-                # 9月26日，加入 warn_socre
-                self.warn_person_bboxes.append(ltrb)  # 报警人的包围框
-                self.warn_person_score.append(phone_item.warn_score)  # 报警人的包围框
-                shot_img = ImgKit_img_box.draw_img_box(frame, ltrb)  # 画线，后续展示完整的图
+                self.warn_person_bboxes.append(phone_item.ltrb)  # 报警人的包围框
+                self.warn_phone_bboxes.append(phone_item.phone_ltrb)  # 报警手机的包围框
+                self.warn_phone_score.append(phone_item.warn_score)  # 报警手机的分数
+                # shot_img = ImgKit_img_box.draw_img_box(frame, ltrb)  # 画线，后续展示完整的图
                 # self.http_helper.send_warn_result(self.pname, self.output_dir[0], self.cam_id, 1, 1,
                 #                             shot_img, self.config.stream_export_img_enable,
                 #                             self.config.stream_web_enable)
@@ -192,13 +221,13 @@ class PhoneComponent(BasedStreamComponent):
     def release_unused(self):
         # 清空长期未更新点
         clear_keys = []
-        for key, item in self.data_dict.items():
+        for key, item in self.user_dict.items():
             if self.frame_id_cache[0] - item.last_update_id > self.config.phone_lost_frame:
                 clear_keys.append(key)
         clear_keys.reverse()
         for key in clear_keys:
-            self.pool.push(self.data_dict[key])
-            self.data_dict.pop(key)  # 从字典中移除item
+            self.user_pool.push(self.user_dict[key])
+            self.user_dict.pop(key)  # 从字典中移除item
 
     def on_draw_vis(self, idx, frame, input_mot):
         """
@@ -208,7 +237,7 @@ class PhoneComponent(BasedStreamComponent):
         :param input_mot:
         :return:
         """
-        if input_mot is None:  # 检测手机的端口，不显示任何内容
+        if input_mot is None:
             return None
         text_scale = 2
         text_thickness = 2
@@ -239,9 +268,9 @@ class PhoneComponent(BasedStreamComponent):
                 cv2.circle(frame, (int(ltrb[0]), int(ltrb[1])), 4, (118, 154, 242), line_thickness)
                 cv2.rectangle(frame, pt1=(int(ltrb[0]), int(ltrb[1])), pt2=(int(ltrb[2]), int(ltrb[3])),
                               color=self._get_color(obj_id), thickness=line_thickness)
-                if self.data_dict.__contains__(obj_id):
-                    cls = int(self.data_dict[obj_id].cls)
-                    is_warn = self.data_dict[obj_id].has_warn
+                if self.user_dict.__contains__(obj_id):
+                    cls = int(self.user_dict[obj_id].cls)
+                    is_warn = self.user_dict[obj_id].has_warn
                     cv2.putText(frame, f"{obj_id}:{self.config.detection_labels[cls]} warn:{is_warn}",
                                 (int(ltrb[0]), int(ltrb[1])),
                                 cv2.FONT_HERSHEY_PLAIN, text_scale, self._get_color(obj_id), thickness=text_thickness)
@@ -279,13 +308,41 @@ class PhoneComponent(BasedStreamComponent):
         else:
             return False
 
-    def on_save_img_full(self, idx, img, bbox=None, path='.', draw_box=False, warn_score=None):
+    def on_save_img_full(self, idx, img, bbox=None, path='.', draw_box=False, warn_score=None, phone_bbox=None):
         if not os.path.exists(path):
             os.makedirs(path)
 
-        if draw_box and bbox is not None:  # 确保bbox不为空
-            img = self.draw_img_box(img, bbox)
+        if img.size == 0:
+            print("警告: 裁剪的图像为空。")
+            return None, None
 
+        if draw_box:  # 确保bbox不为空
+            # if bbox is not None:
+            #     img = self.draw_img_box(img, bbox)
+            if phone_bbox is not None:
+                img = self.draw_img_box(img, phone_bbox, 'blue')
+
+        time_str = time.strftime('%Y-%m-%d_%H-%M-%S', time.localtime())
+        # 在文件名中加入warn_score，确保warn_score为字符串形式
+        image_name = f"0_{self.cam_id}_{time_str}_{idx}_{warn_score}.jpg" if warn_score is not None else f"0_{self.cam_id}_{time_str}_{idx}.jpg"
+        image_path = os.path.join(path, image_name)
+
+        try:
+            cv2.imwrite(image_path, img)
+        except Exception as e:
+            print(f"错误: 保存图像失败 - {e}")
+            return None, None
+
+        return image_path, img
+
+    def on_save_img_crop(self, idx, img, bbox=None, path='.', draw_box=False, warn_score=None):
+        if not os.path.exists(path):
+            os.makedirs(path)
+
+        if draw_box:  # True
+            print("警告: 保存逻辑错误。")
+        if not draw_box:
+            img = img[int(bbox[1]):int(bbox[3]), int(bbox[0]):int(bbox[2])]
         if img.size == 0:
             print("警告: 裁剪的图像为空。")
             return None, None
@@ -303,35 +360,11 @@ class PhoneComponent(BasedStreamComponent):
 
         return image_path, img
 
-    def on_save_img_crop(self, idx, img, bbox=None, path='.', draw_box=False):
-        if not os.path.exists(path):
-            os.makedirs(path)
-
-        if draw_box:  # True
-            print("警告: 保存逻辑错误。")
-        if not draw_box:
-            img = img[int(bbox[1]):int(bbox[3]), int(bbox[0]):int(bbox[2])]
-        if img.size == 0:
-            print("警告: 裁剪的图像为空。")
-            return None, None
-
-        time_str = time.strftime('%Y-%m-%d_%H-%M-%S', time.localtime())
-        image_name = f"0_{self.cam_id}_{time_str}_{idx}.jpg"
-        image_path = os.path.join(path, image_name)
-
-        try:
-            cv2.imwrite(image_path, img)
-        except Exception as e:
-            print(f"错误: 保存图像失败 - {e}")
-            return None, None
-
-        return image_path, img
-
-    def draw_img_box(self, im, ltrb):
+    def draw_img_box(self, im, ltrb, color='red'):
         x1, y1, x2, y2 = ltrb
         im_pil = Image.fromarray(im)
         draw = ImageDraw.Draw(im_pil)
-        draw.rectangle(((x1, y1), (x2, y2)), outline='red', width=5)
+        draw.rectangle(((x1, y1), (x2, y2)), outline=color, width=5)
         im_with_rectangle = np.array(im_pil)
         return im_with_rectangle
 
@@ -353,26 +386,50 @@ class PhoneComponent(BasedStreamComponent):
             print("调试：定时保存功能未启用！")
             return  # 如果未启用，则直接返回
 
-        # 设置时间间隔为1秒
+        delta1 = self.config.phone_timing_delta  # 定期存图间隔为delta
         now = time.time()
-        delta = self.config.phone_timing_delta
-
+        # 每delta1秒执行一次，存图操作
         if all_bboxes is not None:
-            if (now - self.timing_record) >= delta:  # 如果时间间隔到了，则执行存图操作
-                if isinstance(all_bboxes, list):
-                    for i, bbox in enumerate(all_bboxes):
-                        self.on_save_img_crop(i, frame, bbox, self.config.phone_timing_path)
-                self.timing_record = now  # 更新时间记录
+            if (now - self.timing_record1) >= delta1:
+                # if isinstance(all_bboxes, list):
+                for i, bbox in enumerate(all_bboxes):
+                    # print("调试374",self.config.phone_timing_path)
+                    self.on_save_img_crop(i, frame, bbox, self.config.phone_timing_path)
+                self.timing_record1 = now  # 记录上次存图时间
 
-    def save_warning_images(self, frame, object_bboxes, warn_score):
+    def save_warning_images(self, frame, object_bboxes):
         if frame is None:
             return
         for i, bbox in enumerate(object_bboxes):
             # 保存一张完整warning图，并画上框
             self.on_save_img_full(i, img=frame, bbox=bbox, path=self.config.phone_warning_uncropped_path, draw_box=True,
-                                  warn_score=f"{self.warn_person_score[i]:.3f}")
+                                  warn_score=f"{self.warn_phone_score[i]:.3f}", phone_bbox=self.warn_phone_bboxes[i])
             # 保存一张裁剪warning图
-            self.on_save_img_crop(i, img=frame, bbox=bbox, path=self.config.phone_warning_path, draw_box=False)
+            self.on_save_img_crop(i, img=frame, bbox=bbox, path=self.config.phone_warning_path, draw_box=False,
+                                  warn_score=f"{self.warn_phone_score[i]:.3f}")
+
+    def clear_old_files(self, directory, age_limit=180):
+        """
+        清除指定目录下超过age_limit秒未修改的所有文件。
+        :param directory: 要清理的目录路径
+        :param age_limit: 文件保留的最大秒数，默认180秒（3分钟）
+        """
+        # 获取当前时间
+        now = time.time()
+        # print("调试393   clear_old_files")
+        # 遍历目录中的所有文件
+        for filename in os.listdir(directory):
+            file_path = os.path.join(directory, filename)
+            # 获取文件状态信息
+            file_stat = os.stat(file_path)
+            # 计算文件最后修改时间与当前时间的差值
+            time_diff = now - file_stat.st_mtime
+
+            # 如果文件修改时间超过了时间限制，则删除文件
+            if time_diff > age_limit:
+                # print(f"删除文件: {file_path}")
+                os.remove(file_path)
+                print(f"已删除超过{age_limit}秒未修改的文件: {filename}")
 
 
 def create_process(shared_memory, config_path: str):

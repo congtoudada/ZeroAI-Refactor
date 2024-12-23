@@ -38,7 +38,7 @@ class FaceRecognizer(object):
         # 初始化人脸数据库，用于注册人脸
         self.faceReg = FaceRegister(self.database_file)
         # 如果不存在就重新建库，加载
-        if not os.path.exists(self.database_file) or self.config.insight_force_rebuild:
+        if self.config.insight_force_rebuild or not os.path.exists(self.database_file):
             self.create_database(self.config.insight_database)
 
     # 自定义

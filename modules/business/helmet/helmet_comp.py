@@ -106,12 +106,17 @@ class HelmetComponent(BasedStreamComponent):
             sort_indices = np.argsort(input_mot[:, 1])
             input_mot = input_mot[sort_indices]
             self.helmet_records.sort(key=lambda x: x.ltrb[1])
+        # TODO: 这里整体逻辑不够合理，应该先遍历安全帽。但由于安全帽问题是频繁发生且采取包围盒匹配，所以不影响结果，后续修改可参考手机脚本
         # 遍历每个人
         for i, obj in enumerate(input_mot):
             ltrb = obj[:4]
+            obj_id = int(obj[6])
             # 只有在检测区域内才匹配
             if not self._is_in_zone(ltrb, self.config.helmet_zone):
                 continue
+            # fix: 报警对象长时间未更新导致重复报警，需要不断更新其frame_id
+            if self.data_dict.__contains__(obj_id):
+                self.data_dict[obj_id].last_update_id = current_frame_id
             # 包围盒匹配（满足就返回）
             match_idx = MatchRecordHelper.match_bbox(ltrb, self.helmet_records)
             # 距离匹配（锁定上半身）
@@ -120,7 +125,6 @@ class HelmetComponent(BasedStreamComponent):
             # match_idx = MatchRecordHelper.match_distance_l2(ltrb + (0, 0, 0, -h/2),
             #                                                 self.helmet_records, max_distance=(w+h)/2)
             if match_idx != -1:  # 存在匹配项
-                obj_id = int(obj[6])
                 helmet = self.helmet_records[match_idx]
                 # 安全帽在人里面，更新人的状态
                 if not self.data_dict.__contains__(obj_id):  # 没有被记录过

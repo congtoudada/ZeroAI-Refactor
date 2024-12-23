@@ -4,7 +4,7 @@ from zero.core.info.base_info import BaseInfo
 class InsightInfo(BaseInfo):
     def __init__(self, data: dict = None):
         self.insight_vis = False  # 可视化
-        self.insight_force_rebuild = False  # 每次运行无论本地是否有缓存都重新建库
+        self.insight_force_rebuild = True  # 每次运行无论本地是否有缓存都重新建库
         self.insight_debug_enable = False  # 是否以debug模式运行，该模式下会将检测到的图片存储到本地）
         self.insight_debug_output = ""  # debug输出路径
         self.insight_det_thresh = 0.4  # 人脸检测阈值，小于该阈值的检测框会被剔除

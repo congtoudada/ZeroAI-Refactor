@@ -26,7 +26,7 @@ class ImgKit:
 
 class ImgKit_img_box:
     @staticmethod
-    def draw_img_box(im, ltrb):
+    def draw_img_box(im, ltrb, color='red'):
         x1, y1, x2, y2 = ltrb[0], ltrb[1], ltrb[2], ltrb[3]
         xy = ((x1, y1), (x2, y2))
         im_pil = Image.fromarray(im)
@@ -35,7 +35,7 @@ class ImgKit_img_box:
         draw = ImageDraw.Draw(im_pil)
 
         # 使用给定的坐标绘制矩形
-        draw.rectangle(xy, outline='red', width=5)
+        draw.rectangle(xy, outline=color, width=5)
 
         # 将PIL图像转换回numpy数组
         im_with_rectangle = np.array(im_pil)

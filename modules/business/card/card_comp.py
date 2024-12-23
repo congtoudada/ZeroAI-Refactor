@@ -4,6 +4,7 @@ import traceback
 import cv2
 from typing import Dict
 import numpy as np
+from zero.utility.img_kit import ImgKit_img_box
 
 from business.card.card_info import CardInfo
 from business.card.card_item import CardItem
@@ -183,7 +184,7 @@ class CardComponent(BasedStreamComponent):
             if self.is_within_card_area(base):
                 self.card_dict[item.obj_id] = item.last_update_id
             if self.is_through_gate_line(key, base, last_base):
-                self.judge_valid(item.obj_id, frame)
+                self.judge_valid(item.obj_id, frame, base)
 
     # 判断是否在刷卡区
     def is_within_card_area(self, base):
@@ -206,13 +207,16 @@ class CardComponent(BasedStreamComponent):
             return False
 
     # 对每个通过门的目标进行代刷卡行为的判断
-    def judge_valid(self, key, frame):
+    def judge_valid(self, key, frame, base):
         valid = key in self.card_dict
         if not valid:
             self.gate_dict[key] = 1
             self.valid = True  # 检测到代刷卡行为
             self.valid_count = self.config.card_warning_frame
             logger.info(f"{self.pname} {key} 代刷卡行为")  # 控制台打印
+            screen_x = int(base[0] * self.stream_width)
+            screen_y = int(base[1] * self.stream_height)
+            cv2.circle(frame, (screen_x, screen_y), 12, (0, 0, 255), 3)
             # WarnKit.send_warn_result(self.pname, self.output_dir, self.stream_cam_id, 3, 1, self.frame,
             #                          self.config.stream_export_img_enable, self.config.stream_web_enable)
             self.http_helper.send_warn_result(self.pname, self.output_dir[0], self.cam_id,

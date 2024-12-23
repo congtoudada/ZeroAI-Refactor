@@ -12,9 +12,9 @@ from scripts.yaml_kit import YamlKit
 
 # 用户设置变量
 # 图片设置
-img_path = "scripts/resources/drawline_test.jpg"  # 打开本地图片
+img_path = "scripts/resources/Snipaste_2024-11-12_14-19-13.png"  # 打开本地图片
 # 视频设置
-vid_path = "res/videos/renlian/renlian1.mp4"  # 打开视频路径
+vid_path = "res/videos/202411/count1.mp4"  # 打开视频路径
 frame_index = 50  # 替换为你想要读取的帧索引
 # 通用配置
 run_mode = 0  # 0 代表使用本地图片 1 代表使用本地视频

@@ -2,6 +2,6 @@ INCLUDE:
   - conf/pro/business/phone/phone_root.yaml
 
 input_ports:  # 输入端口 (先手机再人)
-  - yolox-phone9
-  - yolox-person9
+  - yolox-phone7
+  - yolox-person7
 output_port: []  # 输出端口

@@ -11,5 +11,5 @@ for root, dirs, files in os.walk(search_dir):
         setup_py_path = os.path.join(root, 'setup.py')
         print(f"Running 'python {setup_py_path} develop' in {root}...")
         # 在 setup.py 所在的目录下执行 python setup.py develop
-        subprocess.run(['python', os.path.basename(setup_py_path), 'develop'], cwd=root, check=True)
+        subprocess.run(['python', os.path.basename(setup_py_path), 'develop', '--user'], cwd=root, check=True)
         print(f"Finished running 'python {setup_py_path} develop' in {root}\n")

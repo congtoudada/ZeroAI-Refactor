@@ -4,23 +4,9 @@ INCLUDE:
 
 input_ports:  # 输入端口
   - camera1
-  - camera2
-  
-#  - camera7
-#  - camera8
-#  - camera9
-#  - camera10
 
 output_ports:  # 输出端口
   - yolox-count1
-  - yolox-count2
-  # - yolox-person4
-  # - yolox-person6
-#  - yolox-person7
-#  - yolox-person8
-#  - yolox-person9
-#  - yolox-person10
-
 
 stream:
   save_video:

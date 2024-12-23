@@ -17,7 +17,7 @@ from zero.core.key.detection_key import DetectionKey
 from zero.core.key.global_key import GlobalKey
 from zero.core.key.stream_key import StreamKey
 from zero.utility.config_kit import ConfigKit
-from zero.utility.img_kit import ImgKit
+from zero.utility.img_kit import ImgKit, ImgKit_img_box
 from zero.utility.object_pool import ObjectPool
 
 
@@ -25,6 +25,7 @@ class IntrudeComponent(BasedStreamComponent):
     """
     特定区域入侵检测
     """
+
     def __init__(self, shared_memory, config_path: str):
         super().__init__(shared_memory)
         self.config: IntrudeInfo = IntrudeInfo(ConfigKit.load(config_path))
@@ -39,6 +40,7 @@ class IntrudeComponent(BasedStreamComponent):
         self.tracker: BytetrackHelper = BytetrackHelper(self.config.stream_mot_config)  # 追踪器
         self.http_helper = SimpleHttpHelper(self.config.stream_http_config)  # http帮助类
         self.face_helper: FaceHelper = None
+        self.intrude_zone = []  # 检测区域像素 ltrb
 
     def on_start(self):
         super().on_start()
@@ -67,9 +69,9 @@ class IntrudeComponent(BasedStreamComponent):
             for key, value in self.data_dict.items():
                 if self._can_send(key, value):
                     # self.face_helper.send(key, self._crop_img(self.frames[0], value.ltrb))
-                    ltrb = value.ltrb  # 如果是检测人，最好截上半身人脸检测
+                    # ltrb = value.ltrb  # 如果是检测人，最好截上半身人脸检测
                     # ltrb[3] = ltrb[3] * 0.67
-                    self.face_helper.send(key, self._crop_img(self.frames[0], ltrb))
+                    self.face_helper.send(key, self._crop_img(self.frames[0], value.ltrb))
                     # break  # 每帧最多发送一个请求（待定）
             self.face_helper.tick()
         return True
@@ -108,7 +110,7 @@ class IntrudeComponent(BasedStreamComponent):
     def on_process_per_stream(self, idx, frame, input_det):
         if input_det is None:
             return None
-        
+
         input_det = input_det[input_det[:, 5] == 0]
         mot_result = self.tracker.inference(input_det)  # 返回对齐输出后的mot结果
         # 根据mot结果进行计数
@@ -159,10 +161,26 @@ class IntrudeComponent(BasedStreamComponent):
                 # 如果Item没有报过警且报警帧数超过有效帧，判定为入侵异常
                 if not item.has_warn and item.get_valid_count() > self.config.intrude_valid_count:
                     logger.info(f"{self.pname} obj_id: {obj_id} 入侵异常")
-                    shot_img = ImgKit.crop_img(frame, ltrb)
+                    # shot_img = ImgKit.crop_img(frame, ltrb)  # obj
+                    # shot_img = frame  # 全图
+                    # 全图带bbox
+                    shot_img = ImgKit_img_box.draw_img_box(frame, ltrb)
+                    screen_x = int((ltrb[0] + ltrb[2]) * 0.5)
+                    screen_y = int((ltrb[1] + ltrb[3]) * 0.5)
+                    cv2.circle(shot_img, (screen_x, screen_y), 4, (118, 154, 242), 2)
+                    # 画警戒线
+                    for i, point in enumerate(self.zone_points):
+                        if i == 0:
+                            continue
+                        cv2.line(shot_img, (
+                            int(self.zone_points[i][0] * self.stream_width),
+                            int(self.zone_points[i][1] * self.stream_height)),
+                                 (int(self.zone_points[i - 1][0] * self.stream_width),
+                                  int(self.zone_points[i - 1][1] * self.stream_height)),
+                                 (0, 0, 255), 2)  # 绘制线条
                     item.has_warn = True
                     self.http_helper.send_warn_result(self.pname, self.output_dir[0], self.cam_id,
-                                                4, item.per_id, shot_img, 1,
+                                                      4, item.per_id, shot_img, 1,
                                                       self.config.stream_export_img_enable,
                                                       self.config.stream_web_enable)
 
@@ -232,7 +250,8 @@ class IntrudeComponent(BasedStreamComponent):
         for i, point in enumerate(self.zone_points):
             if i == 0:
                 continue
-            cv2.line(frame, (int(self.zone_points[i][0] * self.stream_width), int(self.zone_points[i][1] * self.stream_height)),
+            cv2.line(frame, (
+            int(self.zone_points[i][0] * self.stream_width), int(self.zone_points[i][1] * self.stream_height)),
                      (int(self.zone_points[i - 1][0] * self.stream_width),
                       int(self.zone_points[i - 1][1] * self.stream_height)),
                      (0, 0, 255), line_thickness)  # 绘制线条

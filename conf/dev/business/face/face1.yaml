@@ -1,0 +1,6 @@
+INCLUDE:
+  - conf/dev/business/face/face_root.yaml
+  - conf/dev/business/face/face1_zone.yaml
+input_ports:  # 输入端口
+  - yolox-person1
+output_ports: []  # 输出端口

@@ -8,4 +8,4 @@ intrude:
   valid_count: 8
   lost_frames: 60
   face_enable: True  # 是否启用人脸识别
-  face_config: conf/pro/business/intrude/face_helper7.yaml  # 人脸请求配置
+  face_config: conf/pro/business/intrude/face_helper4.yaml  # 人脸请求配置

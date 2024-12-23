@@ -14,34 +14,30 @@ service_list:
 stream_list:
   - path: modules/zero/core/component/stream_comp.py  # 111: 计数
     conf: conf/pro/stream/stream1.yaml
-  - path: modules/zero/core/component/stream_comp.py  # 112: 计数
+  - path: modules/zero/core/component/stream_comp.py  # 120: 手机
     conf: conf/pro/stream/stream2.yaml
-#  - path: modules/zero/core/component/stream_comp.py # 113: 无用
-#    conf: conf/pro/stream/stream3.yaml
-  - path: modules/zero/core/component/stream_comp.py  # 114: 人脸
+  - path: modules/zero/core/component/stream_comp.py # 113: 代刷卡
+    conf: conf/pro/stream/stream3.yaml
+  - path: modules/zero/core/component/stream_comp.py # 116: 入侵
     conf: conf/pro/stream/stream4.yaml
-#  - path: modules/zero/core/component/stream_comp.py # 115: 无用
-  #  conf: conf/pro/stream/stream5.yaml
-  - path: modules/zero/core/component/stream_comp.py # 116: 人脸，安全帽
+  - path: modules/zero/core/component/stream_comp.py # 14: 人脸、安全帽
+    conf: conf/pro/stream/stream5.yaml
+  - path: modules/zero/core/component/stream_comp.py # 16: 手机（屏幕左边）
     conf: conf/pro/stream/stream6.yaml
-  - path: modules/zero/core/component/stream_comp.py # 117: 入侵
+  - path: modules/zero/core/component/stream_comp.py # 117: 手机（屏幕正对面）
     conf: conf/pro/stream/stream7.yaml
-  - path: modules/zero/core/component/stream_comp.py # 118: 代刷卡
-    conf: conf/pro/stream/stream8.yaml
-  - path: modules/zero/core/component/stream_comp.py # 119: 手机
-    conf: conf/pro/stream/stream9.yaml
-  - path: modules/zero/core/component/stream_comp.py # 120: 手机
-    conf: conf/pro/stream/stream10.yaml
+#  - path: modules/zero/core/component/stream_comp.py # 118: 手机（屏幕上方）
+#    conf: conf/pro/stream/stream8.yaml
+#  - path: modules/zero/core/component/stream_comp.py # 12: 手机（屏幕斜对面）
+#    conf: conf/pro/stream/stream9.yaml
 # 算法
 algorithm_list:
   # ------------------- 目标检测算法 -------------------
-#  - path: modules/algorithm/yolox_module/yolox/zero/component/yolox_comp.py  # 人头
-#    conf: conf/pro/detection/yolox/yolox_head.yaml
-  - path: modules/algorithm/yolox_module/yolox/zero/component/yolox_comp.py  # keliu
+  - path: modules/algorithm/yolox_module/yolox/zero/component/yolox_comp.py  # 计数
     conf: conf/pro/detection/yolox/yolox_count.yaml
-  - path: modules/algorithm/yolox_module/yolox/zero/component/yolox_comp.py  # 人1
+  - path: modules/algorithm/yolox_module/yolox/zero/component/yolox_comp.py  # 人（进程1）
     conf: conf/pro/detection/yolox/yolox_person1.yaml
-  - path: modules/algorithm/yolox_module/yolox/zero/component/yolox_comp.py  # 人2
+  - path: modules/algorithm/yolox_module/yolox/zero/component/yolox_comp.py  # 人（进程2）
     conf: conf/pro/detection/yolox/yolox_person2.yaml
   - path: modules/algorithm/yolox_module/yolox/zero/component/yolox_comp.py  # 安全帽
     conf: conf/pro/detection/yolox/yolox_helmet.yaml
@@ -50,22 +46,24 @@ algorithm_list:
   # ------------------- 业务算法 -------------------
   - path: modules/business/count/count_comp.py  # 计数1
     conf: conf/pro/business/count/count1.yaml
-  - path: modules/business/count/count_comp.py  # 计数2
-    conf: conf/pro/business/count/count2.yaml
-  - path: modules/business/renlian/renlian_comp.py  # 人脸4
-    conf: conf/pro/business/renlian/renlian4.yaml
-  - path: modules/business/renlian/renlian_comp.py  # 人脸6
-    conf: conf/pro/business/renlian/renlian6.yaml
-  - path: modules/business/intrude/intrude_comp.py  # 入侵7
-    conf: conf/pro/business/intrude/intrude7.yaml
-  - path: modules/business/helmet/helmet_comp.py  # 安全帽6
-    conf: conf/pro/business/helmet/helmet6.yaml
-  - path: modules/business/card/card_comp.py  # 代刷卡8
-    conf: conf/pro/business/card/card8.yaml
-  - path: modules/business/phone/phone_comp.py  # 手机9
-    conf: conf/pro/business/phone/phone9.yaml
-  - path: modules/business/phone/phone_comp.py  # 手机10
-    conf: conf/pro/business/phone/phone10.yaml
+  - path: modules/business/phone/phone_comp.py  # 手机2
+    conf: conf/pro/business/phone/phone2.yaml
+  - path: modules/business/card/card_comp.py  # 代刷卡3
+    conf: conf/pro/business/card/card3.yaml
+  - path: modules/business/intrude/intrude_comp.py  # 入侵4
+    conf: conf/pro/business/intrude/intrude4.yaml
+  - path: modules/business/renlian/renlian_comp.py  # 人脸5
+    conf: conf/pro/business/face/face5.yaml
+  - path: modules/business/helmet/helmet_comp.py  # 安全帽5
+    conf: conf/pro/business/helmet/helmet5.yaml
+  - path: modules/business/phone/phone_comp.py  # 手机6
+    conf: conf/pro/business/phone/phone6.yaml
+  - path: modules/business/phone/phone_comp.py  # 手机7
+    conf: conf/pro/business/phone/phone7.yaml
+#  - path: modules/business/phone/phone_comp.py  # 手机8
+#    conf: conf/pro/business/phone/phone7.yaml
+#  - path: modules/business/phone/phone_comp.py  # 手机9
+#    conf: conf/pro/business/phone/phone7.yaml
 
 app:
   running_file: bin/pro/runtime.pkl  # 框架运行时标识路径，运行时生成，删除该文件可以关闭算法端

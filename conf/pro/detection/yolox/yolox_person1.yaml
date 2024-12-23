@@ -3,24 +3,16 @@ INCLUDE:
   - conf/pro/detection/labels/person_labels.yaml
 
 input_ports:  # 输入端口
-  - camera1
   - camera2
+  - camera3
   - camera4
-  - camera6
-#  - camera7
-#  - camera8
-#  - camera9
-#  - camera10
+  - camera5
 
 output_ports:  # 输出端口
-  - yolox-person1
   - yolox-person2
+  - yolox-person3
   - yolox-person4
-  - yolox-person6
-#  - yolox-person7
-#  - yolox-person8
-#  - yolox-person9
-#  - yolox-person10
+  - yolox-person5
 
 
 stream:

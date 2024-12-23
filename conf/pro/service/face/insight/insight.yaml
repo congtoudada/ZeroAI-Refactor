@@ -10,7 +10,7 @@ insight:
     detector: RFB  # ['RFB', 'MTCNN']
     ckpt: pretrained/face/insight/detection/light_detector/pth/face_detection_rbf.pth  # 人脸检测权重文件 (MTCNN无需)
   rec:
-    thresh: 0.55  # 人脸识别阈值，小于该阈值的人脸识别结果为unknown，表示未知
+    thresh: 0.5  # 人脸识别阈值，小于该阈值的人脸识别结果为unknown，表示未知
     feature: mobilenet_v2  # ['resnet50', 'resnet18', 'mobilenet_v2']
     input_size: 112  # 输入缩放到该尺寸
     embedding_size: 512  # 编码特征向量维度
